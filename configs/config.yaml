@@ -1,0 +1,47 @@
+eventbus:
+  provider: redis
+
+storage:
+  provider: postgres
+
+cache:
+  provider: redis
+
+llm:
+  provider: gemini
+
+email:
+  provider: gmail
+
+publisher:
+  provider: discord
+
+redis:
+  addr: localhost:6379
+  password: ""
+  db: 0
+  stream_prefix: nektar
+  group_name: nektar-workers
+  consumer_name: nektar-1
+
+postgres:
+  dsn: postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
+
+gmail:
+  client_id: ""
+  client_secret: ""
+  refresh_token: ""
+
+gemini:
+  api_key: ""
+  model: gemini-2.0-flash
+  embed_model: text-embedding-004
+
+discord:
+  webhook_url: ""
+
+scheduler:
+  fetch_interval: 15m
+
+server:
+  addr: ":8080"
