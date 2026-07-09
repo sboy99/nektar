@@ -8,7 +8,7 @@ import (
 	"github.com/sboy99/nektar/internal/shared/errors"
 )
 
-// Provider implements the LLM port using Google Gemini.
+// Provider implements embedding and summary ports using Google Gemini.
 type Provider struct {
 	client     *genai.Client
 	model      string
@@ -22,7 +22,7 @@ type Config struct {
 	EmbedModel string
 }
 
-// NewProvider creates a Gemini LLM provider.
+// NewProvider creates a Gemini provider that satisfies both embedding and summary ports.
 func NewProvider(ctx context.Context, cfg Config) (*Provider, error) {
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey:  cfg.APIKey,

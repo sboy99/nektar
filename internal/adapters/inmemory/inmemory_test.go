@@ -25,7 +25,7 @@ func TestBusPublishSubscribe(t *testing.T) {
 		t.Fatalf("subscribe: %v", err)
 	}
 
-	if err := bus.Publish(ctx, events.EmailFetched{EmailID: "email-1"}); err != nil {
+	if err := bus.Publish(ctx, events.EmailFetched{UserID: "user-1", EmailID: "email-1"}); err != nil {
 		t.Fatalf("publish: %v", err)
 	}
 

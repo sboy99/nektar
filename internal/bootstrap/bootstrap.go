@@ -15,9 +15,10 @@ import (
 	redisadapter "github.com/sboy99/nektar/internal/adapters/redis"
 	portcache "github.com/sboy99/nektar/internal/ports/cache"
 	portemail "github.com/sboy99/nektar/internal/ports/email"
+	portembedding "github.com/sboy99/nektar/internal/ports/embedding"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
-	portllm "github.com/sboy99/nektar/internal/ports/llm"
 	portpublisher "github.com/sboy99/nektar/internal/ports/publisher"
+	portsummary "github.com/sboy99/nektar/internal/ports/summary"
 	"github.com/sboy99/nektar/internal/ports/repository"
 	"github.com/sboy99/nektar/internal/modules/clustering"
 	"github.com/sboy99/nektar/internal/modules/digest"
@@ -38,9 +39,10 @@ type App struct {
 	Metrics   *metrics.Registry
 	Storage   repository.Storage
 	EventBus  porteventbus.EventBus
-	Cache     portcache.Cache
-	LLM       portllm.Provider
-	Email     portemail.Provider
+	Cache      portcache.Cache
+	Embedder   portembedding.Provider
+	Summarizer portsummary.Provider
+	Email      portemail.Provider
 	Publisher portpublisher.Publisher
 	Scheduler *scheduler.Scheduler
 }
@@ -71,10 +73,12 @@ func Build(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*App, 
 		return nil, fmt.Errorf("build cache: %w", err)
 	}
 
-	app.LLM, err = buildLLM(ctx, cfg)
+	geminiProvider, err := buildGemini(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("build llm: %w", err)
+		return nil, fmt.Errorf("build gemini: %w", err)
 	}
+	app.Embedder = geminiProvider
+	app.Summarizer = geminiProvider
 
 	app.Email, err = buildEmail(ctx, cfg)
 	if err != nil {
@@ -133,7 +137,7 @@ func buildCache(cfg *config.Config) (portcache.Cache, error) {
 	}
 }
 
-func buildLLM(ctx context.Context, cfg *config.Config) (portllm.Provider, error) {
+func buildGemini(ctx context.Context, cfg *config.Config) (*gemini.Provider, error) {
 	switch cfg.LLM.Provider {
 	case "gemini":
 		return gemini.NewProvider(ctx, gemini.Config{

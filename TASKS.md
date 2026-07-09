@@ -26,7 +26,11 @@ The project already contains:
 - Docker Compose
 - Bootstrap wiring
 
-Remaining work is primarily business logic, persistence, production adapters, testing, and deployment.
+## Phase 0 Complete
+
+The domain model is finalized (multi-user). See `shared/domain/` for all entities, validation, and aggregate boundaries.
+
+Remaining work is primarily persistence (Phase 1), business logic, production adapters, testing, and deployment.
 
 ---
 
@@ -71,22 +75,63 @@ Every phase below corresponds to one stage in this pipeline.
 
 ## Goal
 
-Finalize the business model before implementing persistence.
+Finalize the business model before implementing persistence. Multi-user from day one: `User` is a first-class aggregate; `user_id` appears on all user-owned entities.
+
+## Aggregate Boundaries
+
+| Aggregate | Root | Notes |
+|-----------|------|-------|
+| User | `User` | Gmail OAuth credentials, sync cursor |
+| Email | `Email` | Raw fetched message; newsletter detection state |
+| Article | `Article` | Normalized/split content |
+| Cluster | `Cluster` | Vector grouping; centroid + article IDs |
+| Topic | `Topic` | Human-facing label for a cluster |
+| Digest | `Digest` | Ranked summary ready to publish |
+
+Entities (not aggregate roots): `Embedding`, `LLMRequest`, `PipelineStatus`
+
+## Domain Files (`shared/domain/`)
+
+- [x] `user.go` — User, GmailSync
+- [x] `email.go` — Email
+- [x] `article.go` — Article, ContentFormat
+- [x] `embedding.go` — Embedding
+- [x] `cluster.go` — Cluster
+- [x] `topic.go` — Topic
+- [x] `digest.go` — Digest, PublishStatus
+- [x] `pipeline.go` — PipelineStage, PipelineStatus, ResourceType
+- [x] `llm_request.go` — LLMRequest
+- [x] `errors.go` — domain sentinel errors
+- [x] `validation.go` — Validate() methods and constructors
+- [x] `doc.go` — package documentation
 
 ## Tasks
 
-- [ ] Finalize aggregate boundaries
-- [ ] Email entity
-- [ ] Article entity
-- [ ] Cluster entity
-- [ ] Digest entity
-- [ ] User entity
-- [ ] Embedding entity
-- [ ] Topic entity
-- [ ] Domain errors
-- [ ] Repository interfaces
-- [ ] Domain validation
-- [ ] Pipeline status model
+- [x] Finalize aggregate boundaries
+- [x] Email entity
+- [x] Article entity
+- [x] Cluster entity
+- [x] Digest entity
+- [x] User entity
+- [x] Embedding entity
+- [x] Topic entity
+- [x] Domain errors
+- [x] Repository interfaces
+- [x] Domain validation
+- [x] Pipeline status model
+
+## Port Updates
+
+- [x] Split `llm.Provider` into `embedding.Provider` and `summary.Provider`
+- [x] Extend repository ports: User, Cluster, Embedding, LLMRequest
+- [x] Add `UserID` to all event payloads in `shared/events/`
+
+## Definition of Done
+
+- [x] All entities defined with multi-user `user_id` fields
+- [x] Domain validation tests pass (`go test ./shared/domain/...`)
+- [x] All ports compile; adapters stub new repository methods
+- [x] No SQL migrations or PostgreSQL query implementation started
 
 ---
 
@@ -125,6 +170,8 @@ Implement:
 - [ ] `ArticleRepository`
 - [ ] `ClusterRepository`
 - [ ] `DigestRepository`
+- [ ] `EmbeddingRepository`
+- [ ] `LLMRequestRepository`
 
 ## Future
 
