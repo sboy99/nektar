@@ -1,231 +1,525 @@
 # Nektar — Project Tasks
 
-Track remaining work to take Nektar from the current **foundation scaffold** to a complete, production-ready newsletter digest pipeline.
+Track the remaining work required to evolve Nektar from the current foundation scaffold into a production-ready, event-driven technical intelligence platform.
 
-Reference: [.cursor/lld.md](.cursor/lld.md)
-
----
-
-## Current Status
-
-The foundation is in place: Hexagonal layout, all port interfaces, config-driven bootstrap, in-memory + Redis event bus, skeleton adapters, and stubbed module handlers. `go build ./...` and `go test ./...` pass.
-
-What remains is **business logic**, **real adapter implementations**, **database schema**, **auth flows**, **tests**, and **production hardening**.
+Reference:
+- [.cursor/lld.md](.cursor/lld.md)
 
 ---
 
-## Completed
+# Current Status
 
-- [x] Go module, project layout (`cmd/`, `internal/modules`, `ports`, `adapters`, `bootstrap`, `platform`, `shared/`)
-- [x] Port interfaces: EventBus, LLM, Email, Repository, Cache, Publisher
-- [x] Domain types and domain events (`EmailFetched`, `ArticleCreated`, `EmbeddingCreated`, `ClusterUpdated`, `DigestReady`)
-- [x] Viper-based config with provider selection and `NEKTAR_` env overrides
-- [x] In-memory event bus, cache, and storage adapters
-- [x] Redis Streams event bus (XADD, XREADGROUP, ACK, retry, DLQ) and Redis cache
-- [x] Skeleton adapters: PostgreSQL, Gmail, Gemini, Discord
-- [x] Bootstrap wiring, scheduler registration, handler subscriptions
-- [x] Logger (slog), Prometheus metrics, health endpoint
-- [x] Docker Compose (Redis + PostgreSQL), Makefile, README
+## Foundation Complete
 
----
+The project already contains:
 
-## Phase 1 — Database & Persistence
+- Hexagonal Architecture
+- Ports & Adapters
+- Config-driven bootstrap
+- Redis Streams EventBus
+- InMemory implementations
+- Provider abstraction
+- Scheduler
+- Health endpoint
+- Metrics
+- Logger
+- Docker Compose
+- Bootstrap wiring
 
-- [ ] Define SQL migration files for core tables:
-  - `emails` (id, subject, from, body, received_at, processed_at)
-  - `articles` (id, email_id, title, content, url, created_at)
-  - `embeddings` (id, article_id, vector, created_at)
-  - `clusters` (id, name, centroid, updated_at)
-  - `cluster_articles` (cluster_id, article_id)
-  - `digests` (id, title, summary, article_ids, created_at, published_at)
-- [ ] Add migration runner (e.g. `golang-migrate` or `goose`) and wire into bootstrap
-- [ ] Implement PostgreSQL `EmailRepository` (Save, FindByID, list unprocessed)
-- [ ] Implement PostgreSQL `ArticleRepository` (Save, FindByID, list by email/cluster)
-- [ ] Implement PostgreSQL `DigestRepository` (Save, FindByID, list recent)
-- [ ] Add repository list/query methods needed by pipeline modules (extend ports as needed)
-- [ ] Add SQLite adapter for local development (optional, per LLD)
+Remaining work is primarily business logic, persistence, production adapters, testing, and deployment.
 
 ---
 
-## Phase 2 — Core Pipeline (Business Modules)
+# Project Pipeline
 
-Each module should: receive event → load/save via repositories → call ports → publish next event.
+```
+Scheduler
+    │
+    ▼
+Fetch Emails
+    │
+    ▼
+Newsletter Detection
+    │
+    ▼
+Content Extraction
+    │
+    ▼
+Normalization
+    │
+    ▼
+Article Splitter
+    │
+    ▼
+Embedding Generation
+    │
+    ▼
+Topic Clustering
+    │
+    ▼
+Digest Builder
+    │
+    ▼
+Publisher
+```
 
-### Fetcher (scheduler-driven)
+Every phase below corresponds to one stage in this pipeline.
 
-- [ ] Call `email.Provider.Fetch()` on schedule
-- [ ] Deduplicate against stored emails (by message ID)
-- [ ] Persist new emails via `EmailRepository`
-- [ ] Publish `EmailFetched` for each new email
-- [ ] Handle fetch errors with logging and metrics
+---
 
-### Extractor (`EmailFetched`)
+# Phase 0 — Domain Model
 
-- [ ] Load email by ID from repository
-- [ ] Parse newsletter HTML/plain text into one or more `Article` records
+## Goal
+
+Finalize the business model before implementing persistence.
+
+## Tasks
+
+- [ ] Finalize aggregate boundaries
+- [ ] Email entity
+- [ ] Article entity
+- [ ] Cluster entity
+- [ ] Digest entity
+- [ ] User entity
+- [ ] Embedding entity
+- [ ] Topic entity
+- [ ] Domain errors
+- [ ] Repository interfaces
+- [ ] Domain validation
+- [ ] Pipeline status model
+
+---
+
+# Phase 1 — Persistence
+
+## Database Schema
+
+### Core Tables
+
+- [ ] `users`
+- [ ] `gmail_sync`
+- [ ] `emails`
+- [ ] `articles`
+- [ ] `clusters`
+- [ ] `cluster_articles`
+- [ ] `digests`
+- [ ] `llm_requests`
+
+### Optional
+
+- [ ] `topics`
+- [ ] `pipeline_status`
+
+## Migration
+
+- [ ] Add golang-migrate
+- [ ] Bootstrap migrations
+- [ ] Rollback support
+
+## PostgreSQL
+
+Implement:
+
+- [ ] `UserRepository`
+- [ ] `EmailRepository`
+- [ ] `ArticleRepository`
+- [ ] `ClusterRepository`
+- [ ] `DigestRepository`
+
+## Future
+
+- [ ] SQLite adapter
+
+---
+
+# Phase 2 — Fetch Pipeline
+
+## Goal
+
+Synchronize Gmail incrementally.
+
+## Gmail Adapter
+
+- [ ] OAuth
+- [ ] Refresh token
+- [ ] History API
+- [ ] Incremental sync
+- [ ] Configurable Gmail query
+
+## Fetcher Module
+
+- [ ] Fetch emails
+- [ ] Deduplicate
+- [ ] Store
+- [ ] Publish `EmailFetched`
+- [ ] Metrics
+- [ ] Retry
+
+---
+
+# Phase 3 — Newsletter Detection
+
+## Goal
+
+Ignore everything that is not a newsletter.
+
+## Tasks
+
+- [ ] List-ID parsing
+- [ ] Bulk header detection
+- [ ] List-Unsubscribe parsing
+- [ ] Sender allowlist
+- [ ] Sender denylist
+- [ ] Spam filtering
+- [ ] Newsletter classification
+
+## Output
+
+```
+Email → Newsletter
+```
+
+---
+
+# Phase 4 — Extraction Pipeline
+
+Split responsibilities.
+
+```
+Email
+    │
+    ▼
+HTML Extraction
+    │
+    ▼
+Normalization
+    │
+    ▼
+Markdown
+    │
+    ▼
+Article Splitter
+    │
+    ▼
+Article
+```
+
+## Extractor
+
+- [ ] MIME parser
+- [ ] HTML parser
+- [ ] Plain text parser
+
+## Normalizer
+
+- [ ] Remove navigation
+- [ ] Remove footer
+- [ ] Remove ads
+- [ ] Remove unsubscribe
+- [ ] Normalize whitespace
+
+## Splitter
+
+- [ ] Detect multiple articles
 - [ ] Persist articles
-- [ ] Publish `ArticleCreated` per article
-- [ ] Mark email as processed
+- [ ] Publish `ArticleCreated`
 
-### Embedding (`ArticleCreated`)
+---
 
-- [ ] Load article by ID
-- [ ] Call `llm.Provider.Embed()` on article content
-- [ ] Persist `Embedding` record
+# Phase 5 — Embedding Pipeline
+
+## Providers
+
+Separate ports — do **not** combine both.
+
+```
+EmbeddingProvider
+SummaryProvider
+```
+
+## Tasks
+
+- [ ] Generate embeddings
+- [ ] Persist embedding
+- [ ] Cache embedding
 - [ ] Publish `EmbeddingCreated`
-- [ ] Cache embeddings in `Cache` for fast re-clustering (optional)
 
-### Clustering (`EmbeddingCreated`)
+## Cost Tracking
 
-- [ ] Load embedding and existing clusters
-- [ ] Assign article to nearest cluster (cosine similarity) or create new cluster
-- [ ] Update cluster centroid and `cluster_articles` join table
-- [ ] Publish `ClusterUpdated` when cluster membership changes
+Persist:
 
-### Digest (`ClusterUpdated`)
-
-- [ ] Load cluster and its articles
-- [ ] Call `llm.Provider.Summarize()` to produce digest summary
-- [ ] Create `Digest` record linked to cluster articles
-- [ ] Publish `DigestReady`
-
-### Publisher (`DigestReady`)
-
-- [ ] Load digest by ID
-- [ ] Call `publisher.Publisher.Publish()` (Discord webhook)
-- [ ] Mark digest as published
-- [ ] Record publish metrics
+- [ ] tokens
+- [ ] latency
+- [ ] provider
+- [ ] model
+- [ ] estimated cost
 
 ---
 
-## Phase 3 — Default Adapter Implementations
+# Phase 6 — Topic Clustering
 
-### Gmail (`internal/adapters/gmail`)
+## Goal
 
-- [ ] Implement `Fetch()`: list messages matching newsletter label/query
-- [ ] Parse Gmail message format (headers, MIME parts, base64 body)
-- [ ] Map to `domain.Email`
-- [ ] Support pagination and incremental fetch (since last run)
-- [ ] Add configurable Gmail search query in config (e.g. `label:newsletters`)
+Convert articles into topics.
 
-### Gemini (`internal/adapters/gemini`)
+## Tasks
 
-- [ ] Implement `Embed()` using configured embed model
-- [ ] Implement `Summarize()` with a digest-focused prompt template
-- [ ] Handle rate limits and retries
-- [ ] Add token/length truncation for large articles
-
-### Discord (`internal/adapters/discord`)
-
-- [ ] Implement `Publish()`: format digest as Discord embed or markdown message
-- [ ] Use existing `sendWebhook()` helper
-- [ ] Truncate content to Discord limits (2000 chars / embed fields)
-
-### PostgreSQL (`internal/adapters/postgres`)
-
-- [ ] Replace all `ErrNotImplemented` stubs with real SQL queries
-- [ ] Use parameterized queries (pgx)
-- [ ] Add connection pool tuning in config
+- [ ] Nearest-neighbor search
+- [ ] Cosine similarity
+- [ ] Create cluster
+- [ ] Update centroid
+- [ ] Merge clusters
+- [ ] Publish `ClusterUpdated`
 
 ---
 
-## Phase 4 — Auth & Credential Flows
+# Phase 7 — Digest Builder
 
-- [ ] Document OAuth2 setup for Gmail (Google Cloud Console, scopes, refresh token)
-- [ ] Add `cmd/nektar-auth` CLI or bootstrap subcommand to obtain Gmail refresh token
-- [ ] Validate required credentials at startup with clear error messages
-- [ ] Support credential files / secrets manager paths in config
-- [ ] Add `.env.example` with all required variables
+Digest generation should be its own pipeline.
 
----
+```
+Clusters
+    │
+    ▼
+Rank
+    │
+    ▼
+Filter
+    │
+    ▼
+Summarize
+    │
+    ▼
+Markdown
+    │
+    ▼
+Digest
+```
 
-## Phase 5 — Observability & Reliability
+## Builder
 
-- [ ] Instrument all module handlers with Prometheus counters (published, handled, errors)
-- [ ] Add structured logging with correlation IDs (email_id, article_id, digest_id)
-- [ ] Add graceful shutdown: drain event bus consumers before exit
-- [ ] Redis DLQ monitoring: alert or CLI to inspect/replay dead-letter messages
-- [ ] Add readiness probe that checks Redis + Postgres connectivity
-- [ ] Configurable retry/backoff policies per handler
+- [ ] Importance scoring
+- [ ] Ranking
+- [ ] Topic ordering
+- [ ] Reading time
 
----
+## Summary
 
-## Phase 6 — Testing
+- [ ] Prompt templates
+- [ ] LLM summary
+- [ ] Markdown rendering
 
-- [ ] Unit tests for each module with in-memory bus + in-memory storage
-- [ ] Integration tests for Redis event bus (requires Docker)
-- [ ] Integration tests for PostgreSQL repositories (requires Docker)
-- [ ] Contract tests for Gmail/Gemini/Discord adapters (mocked HTTP)
-- [ ] End-to-end test: inject `EmailFetched` → assert `DigestReady` published (in-memory)
-- [ ] Add `make test-integration` target with Docker Compose test profile
+## Prompt Management
 
----
+Store prompts separately.
 
-## Phase 7 — Additional Adapters (Future)
-
-Per LLD, these are not required for MVP but should be added as separate adapters behind existing ports.
-
-### Event Bus
-
-- [ ] Kafka adapter (`platform/eventbus/kafka`)
-- [ ] NATS adapter (`platform/eventbus/nats`)
-
-### Email
-
-- [ ] Outlook adapter
-- [ ] IMAP adapter
-
-### LLM
-
-- [ ] OpenAI adapter
-- [ ] Claude adapter
-- [ ] Ollama (local) adapter
-
-### Publisher
-
-- [ ] Slack adapter
-- [ ] Telegram adapter
-- [ ] Email (SMTP) adapter
-- [ ] RSS feed adapter
-
-### Storage
-
-- [ ] SQLite adapter (local dev)
+```
+prompts/
+  summary.md
+  digest.md
+  cluster.md
+  topic.md
+```
 
 ---
 
-## Phase 8 — Deployment & Production
+# Phase 8 — Publisher
 
-- [ ] Production Dockerfile (multi-stage build)
-- [ ] Kubernetes manifests or Terraform (optional)
-- [ ] CI pipeline: lint, test, build, push image
-- [ ] Production config templates (secrets via env / K8s secrets)
-- [ ] Runbook: startup, credential rotation, DLQ replay, disaster recovery
-- [ ] Rate limiting and cost controls for LLM API calls
+## Discord
 
----
+- [ ] Markdown builder
+- [ ] Embed builder
+- [ ] Webhook client
+- [ ] Retry
+- [ ] Publish metrics
 
-## Suggested Implementation Order
+## Future
 
-1. **Phase 1** — Database schema and PostgreSQL repos (everything else depends on persistence)
-2. **Phase 3** — Gmail Fetch, Gemini Embed/Summarize, Discord Publish (unblock real data flow)
-3. **Phase 2** — Pipeline modules in order: Fetcher → Extractor → Embedding → Clustering → Digest → Publisher
-4. **Phase 4** — Auth CLI and credential validation
-5. **Phase 6** — Tests alongside each module (don't defer all testing to the end)
-6. **Phase 5** — Observability and reliability hardening
-7. **Phase 8** — Production deployment
-8. **Phase 7** — Additional adapters as needed
+- [ ] Slack
+- [ ] Telegram
+- [ ] Email
+- [ ] RSS
 
 ---
 
-## Definition of Done (MVP)
+# Phase 9 — Scheduler
 
-The project is **MVP-complete** when:
+Document every scheduled job.
 
-1. Scheduler fetches newsletter emails from Gmail on a configured interval
-2. Pipeline extracts articles, generates embeddings, clusters them, and produces a digest
-3. Digest is published to Discord automatically
-4. All state is persisted in PostgreSQL
-5. Events flow through Redis Streams in production (in-memory for tests)
-6. Integration tests pass with Docker Compose
-7. README documents setup end-to-end including Gmail OAuth and API keys
+- [ ] Fetch Gmail
+- [ ] Retry failures
+- [ ] Publish digest
+- [ ] Cleanup cache
+- [ ] Cleanup old events
+- [ ] Refresh OAuth
+
+---
+
+# Phase 10 — Observability
+
+## Metrics
+
+Track:
+
+- [ ] Emails fetched
+- [ ] Newsletters detected
+- [ ] Articles extracted
+- [ ] Embeddings generated
+- [ ] Clusters created
+- [ ] Duplicate articles
+- [ ] Digest latency
+- [ ] Publish latency
+- [ ] LLM latency
+- [ ] Token usage
+
+## Logging
+
+- [ ] Correlation IDs
+- [ ] Pipeline tracing
+- [ ] Structured logging
+
+## Reliability
+
+- [ ] Retry policy
+- [ ] DLQ replay
+- [ ] Readiness probe
+- [ ] Graceful shutdown
+
+---
+
+# Phase 11 — Testing
+
+## Unit
+
+- [ ] Modules
+- [ ] Services
+- [ ] Domain
+
+## Integration
+
+- [ ] Redis Streams
+- [ ] PostgreSQL
+- [ ] Gmail adapter
+- [ ] Gemini adapter
+- [ ] Discord adapter
+
+## End-to-End
+
+```
+Fetch → Extract → Embed → Cluster → Digest → Publish
+```
+
+---
+
+# Phase 12 — Production
+
+- [ ] Multi-stage Dockerfile
+- [ ] CI
+- [ ] Production config
+- [ ] Kubernetes manifests
+- [ ] Secrets
+- [ ] Runbook
+- [ ] Rate limiting
+- [ ] Cost controls
+
+---
+
+# Phase 13 — Additional Adapters
+
+## Event Bus
+
+- [ ] Kafka
+- [ ] NATS
+
+## Email
+
+- [ ] Outlook
+- [ ] IMAP
+
+## LLM
+
+- [ ] OpenAI
+- [ ] Claude
+- [ ] Ollama
+
+## Publisher
+
+- [ ] Slack
+- [ ] Telegram
+- [ ] RSS
+- [ ] SMTP
+
+## Storage
+
+- [ ] SQLite
+
+---
+
+# Future Roadmap
+
+Once the MVP is complete, Nektar becomes more than a newsletter summarizer.
+
+## Knowledge Layer
+
+```
+Email
+    │
+    ▼
+Article
+    │
+    ▼
+Embedding
+    │
+    ▼
+Cluster
+    │
+    ▼
+Knowledge Item
+```
+
+## Consumers
+
+- Daily Digest
+- Weekly Digest
+- Monthly Digest
+- Semantic Search
+- RAG
+- Podcast
+- Personal Recommendations
+
+---
+
+# Definition of Done (MVP)
+
+The MVP is complete when:
+
+- [ ] Scheduler fetches newsletters from Gmail
+- [ ] Newsletter detector filters non-newsletters
+- [ ] Articles are extracted and normalized
+- [ ] Embeddings are generated
+- [ ] Articles are clustered
+- [ ] Daily digest is generated
+- [ ] Digest is published to Discord
+- [ ] PostgreSQL stores all state
+- [ ] Redis Streams powers the event pipeline
+- [ ] Integration tests pass
+- [ ] Documentation covers OAuth, setup, deployment, and troubleshooting
+
+---
+
+# Suggested Implementation Order
+
+1. **Phase 0** — Domain model (blocks everything else)
+2. **Phase 1** — Persistence (schema + repositories)
+3. **Phase 2** — Fetch pipeline (Gmail + Fetcher)
+4. **Phase 3** — Newsletter detection
+5. **Phase 4** — Extraction pipeline (Extractor → Normalizer → Splitter)
+6. **Phase 5** — Embedding pipeline (split `EmbeddingProvider` / `SummaryProvider` ports)
+7. **Phase 6** — Topic clustering
+8. **Phase 7** — Digest builder + prompt management
+9. **Phase 8** — Publisher (Discord)
+10. **Phase 9** — Scheduler jobs
+11. **Phase 10** — Observability (alongside each phase, not only at the end)
+12. **Phase 11** — Testing (unit + integration per phase; E2E after pipeline is wired)
+13. **Phase 12** — Production
+14. **Phase 13** — Additional adapters as needed
