@@ -66,6 +66,25 @@ Multi-user domain model in `shared/domain/`:
 
 Supporting entities: `Embedding`, `LLMRequest`, `PipelineStatus`
 
+## Persistence
+
+PostgreSQL is the production storage adapter. On connect, `postgres.NewStorage` runs embedded migrations via [golang-migrate](https://github.com/golang-migrate/migrate).
+
+Schema lives in `internal/adapters/postgres/migrations/`:
+
+| Table | Purpose |
+|-------|---------|
+| `users` | Account identity |
+| `gmail_sync` | Incremental Gmail sync cursor |
+| `emails` | Fetched messages |
+| `articles` | Extracted content |
+| `clusters` / `cluster_articles` | Semantic groupings |
+| `embeddings` | Article vectors (`REAL[]`) |
+| `digests` | Curated summaries |
+| `llm_requests` | Cost / latency tracking |
+
+Repository ports are fully implemented for both PostgreSQL and in-memory storage.
+
 ## Project Layout
 
 ```
@@ -79,6 +98,7 @@ nektar/
 │   │   ├── repository/      # Per-aggregate repositories
 │   │   └── ...
 │   ├── adapters/            # Infrastructure implementations
+│   │   └── postgres/        # Storage + embedded SQL migrations
 │   ├── bootstrap/           # Dependency wiring
 │   └── platform/            # Config, logger, metrics, scheduler
 ├── shared/
@@ -90,7 +110,7 @@ nektar/
 
 ## Prerequisites
 
-- Go 1.23+
+- Go 1.25+
 - Docker & Docker Compose (for Redis + PostgreSQL)
 
 ## Quick Start
@@ -130,7 +150,19 @@ Any config value can be overridden via environment variables with the `NEKTAR_` 
 
 ```bash
 export NEKTAR_EVENTBUS_PROVIDER=inmemory
+export NEKTAR_STORAGE_PROVIDER=postgres
+export NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable'
 export NEKTAR_GEMINI_API_KEY=your-key
+```
+
+### PostgreSQL Integration Tests
+
+Postgres repository tests skip unless a DSN is set:
+
+```bash
+make infra-up
+NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' \
+  go test ./internal/adapters/postgres/... -count=1 -v
 ```
 
 ## Endpoints
@@ -144,11 +176,12 @@ export NEKTAR_GEMINI_API_KEY=your-key
 
 | Phase | Status | Description |
 |-------|--------|-------------|
-| Foundation | Complete | Architecture, ports, bootstrap, adapters (skeleton) |
+| Foundation | Complete | Architecture, ports, bootstrap, adapters |
 | Phase 0 | Complete | Domain model, validation, repository ports, split LLM ports |
-| Phase 1+ | Pending | Persistence, pipeline modules, production adapters |
+| Phase 1 | Complete | PostgreSQL schema, migrations, repository implementations |
+| Phase 2+ | Pending | Fetch pipeline, detection, extraction, and remaining modules |
 
-Business logic in modules is stubbed. PostgreSQL adapter methods return `ErrNotImplemented` until Phase 1.
+Business logic in modules is still stubbed. Persistence is ready for Phase 2 to start writing through the repository ports.
 
 ## License
 

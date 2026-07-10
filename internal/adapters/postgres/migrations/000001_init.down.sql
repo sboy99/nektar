@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS llm_requests;
+DROP TABLE IF EXISTS digests;
+DROP TABLE IF EXISTS embeddings;
+DROP TABLE IF EXISTS cluster_articles;
+DROP TABLE IF EXISTS clusters;
+DROP TABLE IF EXISTS articles;
+DROP TABLE IF EXISTS emails;
+DROP TABLE IF EXISTS gmail_sync;
+DROP TABLE IF EXISTS users;

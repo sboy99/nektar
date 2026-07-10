@@ -141,37 +141,38 @@ Entities (not aggregate roots): `Embedding`, `LLMRequest`, `PipelineStatus`
 
 ### Core Tables
 
-- [ ] `users`
-- [ ] `gmail_sync`
-- [ ] `emails`
-- [ ] `articles`
-- [ ] `clusters`
-- [ ] `cluster_articles`
-- [ ] `digests`
-- [ ] `llm_requests`
+- [x] `users`
+- [x] `gmail_sync`
+- [x] `emails`
+- [x] `articles`
+- [x] `clusters`
+- [x] `cluster_articles`
+- [x] `embeddings` (required by `EmbeddingRepository`; vectors as `REAL[]`)
+- [x] `digests`
+- [x] `llm_requests`
 
-### Optional
+### Optional (deferred — no repository ports yet; stage lives on Email/Article)
 
 - [ ] `topics`
 - [ ] `pipeline_status`
 
 ## Migration
 
-- [ ] Add golang-migrate
-- [ ] Bootstrap migrations
-- [ ] Rollback support
+- [x] Add golang-migrate
+- [x] Bootstrap migrations (auto `Up()` in `postgres.NewStorage`)
+- [x] Rollback support (`000001_init.down.sql`)
 
 ## PostgreSQL
 
 Implement:
 
-- [ ] `UserRepository`
-- [ ] `EmailRepository`
-- [ ] `ArticleRepository`
-- [ ] `ClusterRepository`
-- [ ] `DigestRepository`
-- [ ] `EmbeddingRepository`
-- [ ] `LLMRequestRepository`
+- [x] `UserRepository`
+- [x] `EmailRepository`
+- [x] `ArticleRepository`
+- [x] `ClusterRepository`
+- [x] `DigestRepository`
+- [x] `EmbeddingRepository`
+- [x] `LLMRequestRepository`
 
 ## Future
 
