@@ -67,6 +67,34 @@ func (r *userRepo) GetGmailSync(ctx context.Context, userID string) (*domain.Gma
 	return &sync, nil
 }
 
+func (r *userRepo) ListGmailSyncs(ctx context.Context) ([]*domain.GmailSync, error) {
+	rows, err := r.s.pool.Query(ctx, `
+		SELECT user_id, history_id, last_synced_at, query, refresh_token_ref
+		FROM gmail_sync
+		ORDER BY user_id
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var syncs []*domain.GmailSync
+	for rows.Next() {
+		var sync domain.GmailSync
+		if err := rows.Scan(
+			&sync.UserID,
+			&sync.HistoryID,
+			&sync.LastSyncedAt,
+			&sync.Query,
+			&sync.RefreshTokenRef,
+		); err != nil {
+			return nil, err
+		}
+		syncs = append(syncs, &sync)
+	}
+	return syncs, rows.Err()
+}
+
 type scannable interface {
 	Scan(dest ...any) error
 }

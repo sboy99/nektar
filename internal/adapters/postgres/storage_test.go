@@ -170,6 +170,14 @@ func TestUserRepository(t *testing.T) {
 	if gotSync.HistoryID != "hist-1" || gotSync.Query != "label:newsletter" {
 		t.Fatalf("unexpected sync: %+v", gotSync)
 	}
+
+	listed, err := s.Users().ListGmailSyncs(ctx)
+	if err != nil {
+		t.Fatalf("ListGmailSyncs: %v", err)
+	}
+	if len(listed) != 1 || listed[0].UserID != "user-1" {
+		t.Fatalf("unexpected ListGmailSyncs: %+v", listed)
+	}
 }
 
 func TestEmailRepository(t *testing.T) {

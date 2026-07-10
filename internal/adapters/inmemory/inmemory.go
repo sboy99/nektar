@@ -197,6 +197,16 @@ func (r *userRepo) GetGmailSync(_ context.Context, userID string) (*domain.Gmail
 	return sync, nil
 }
 
+func (r *userRepo) ListGmailSyncs(_ context.Context) ([]*domain.GmailSync, error) {
+	r.s.mu.RLock()
+	defer r.s.mu.RUnlock()
+	syncs := make([]*domain.GmailSync, 0, len(r.s.gmailSyncs))
+	for _, sync := range r.s.gmailSyncs {
+		syncs = append(syncs, sync)
+	}
+	return syncs, nil
+}
+
 type emailRepo struct{ s *Storage }
 
 func (r *emailRepo) Save(_ context.Context, email *domain.Email) error {

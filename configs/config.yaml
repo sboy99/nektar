@@ -30,7 +30,8 @@ postgres:
 gmail:
   client_id: ""
   client_secret: ""
-  refresh_token: ""
+  default_query: "newer_than:7d"
+  refresh_tokens: {}
 
 gemini:
   api_key: ""

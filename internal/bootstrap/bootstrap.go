@@ -80,7 +80,7 @@ func Build(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*App, 
 	app.Embedder = geminiProvider
 	app.Summarizer = geminiProvider
 
-	app.Email, err = buildEmail(ctx, cfg)
+	app.Email, err = buildEmail(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("build email: %w", err)
 	}
@@ -150,14 +150,14 @@ func buildGemini(ctx context.Context, cfg *config.Config) (*gemini.Provider, err
 	}
 }
 
-func buildEmail(ctx context.Context, cfg *config.Config) (portemail.Provider, error) {
+func buildEmail(cfg *config.Config) (portemail.Provider, error) {
 	switch cfg.Email.Provider {
 	case "gmail":
-		return gmail.NewProvider(ctx, gmail.Config{
+		return gmail.NewProvider(gmail.Config{
 			ClientID:     cfg.Gmail.ClientID,
 			ClientSecret: cfg.Gmail.ClientSecret,
-			RefreshToken: cfg.Gmail.RefreshToken,
-		})
+			DefaultQuery: cfg.Gmail.DefaultQuery,
+		}), nil
 	default:
 		return nil, fmt.Errorf("unknown email provider: %s", cfg.Email.Provider)
 	}
@@ -186,7 +186,11 @@ func registerSchedulerJobs(app *App) {
 	app.Scheduler.Register(scheduler.Job{
 		Name:     "fetcher",
 		Interval: app.Config.Scheduler.FetchInterval,
-		Fn:       fetcher.Handle(app.Logger, app.Email, app.Storage, app.EventBus),
+		Fn: fetcher.Handle(app.Logger, app.Email, app.Storage, app.EventBus, fetcher.Config{
+			RefreshTokens: app.Config.Gmail.RefreshTokens,
+			DefaultQuery:  app.Config.Gmail.DefaultQuery,
+			Metrics:       app.Metrics,
+		}),
 	})
 }
 

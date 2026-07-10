@@ -30,7 +30,15 @@ The project already contains:
 
 The domain model is finalized (multi-user). See `shared/domain/` for all entities, validation, and aggregate boundaries.
 
-Remaining work is primarily persistence (Phase 1), business logic, production adapters, testing, and deployment.
+## Phase 1 Complete
+
+PostgreSQL schema, migrations, and repository implementations are in place (plus in-memory adapters).
+
+## Phase 2 Complete
+
+Multi-user Gmail fetch pipeline: History API incremental sync, per-user refresh tokens, fetcher dedupe/store/`EmailFetched`, metrics, and retry.
+
+Remaining work is primarily newsletter detection (Phase 3), extraction and later pipeline stages, testing, and deployment.
 
 ---
 
@@ -188,20 +196,20 @@ Synchronize Gmail incrementally.
 
 ## Gmail Adapter
 
-- [ ] OAuth
-- [ ] Refresh token
-- [ ] History API
-- [ ] Incremental sync
-- [ ] Configurable Gmail query
+- [x] OAuth
+- [x] Refresh token
+- [x] History API
+- [x] Incremental sync
+- [x] Configurable Gmail query
 
 ## Fetcher Module
 
-- [ ] Fetch emails
-- [ ] Deduplicate
-- [ ] Store
-- [ ] Publish `EmailFetched`
-- [ ] Metrics
-- [ ] Retry
+- [x] Fetch emails
+- [x] Deduplicate
+- [x] Store
+- [x] Publish `EmailFetched`
+- [x] Metrics
+- [x] Retry
 
 ---
 

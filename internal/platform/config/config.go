@@ -48,9 +48,10 @@ type PostgresConfig struct {
 
 // GmailConfig configures Gmail API access.
 type GmailConfig struct {
-	ClientID     string `mapstructure:"client_id"`
-	ClientSecret string `mapstructure:"client_secret"`
-	RefreshToken string `mapstructure:"refresh_token"`
+	ClientID       string            `mapstructure:"client_id"`
+	ClientSecret   string            `mapstructure:"client_secret"`
+	DefaultQuery   string            `mapstructure:"default_query"`
+	RefreshTokens  map[string]string `mapstructure:"refresh_tokens"`
 }
 
 // GeminiConfig configures the Gemini LLM provider.
@@ -112,6 +113,8 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("redis.consumer_name", "nektar-1")
 
 	v.SetDefault("postgres.dsn", "postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable")
+
+	v.SetDefault("gmail.default_query", "newer_than:7d")
 
 	v.SetDefault("gemini.model", "gemini-2.0-flash")
 	v.SetDefault("gemini.embed_model", "text-embedding-004")

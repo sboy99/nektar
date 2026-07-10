@@ -90,8 +90,9 @@ Repository ports are fully implemented for both PostgreSQL and in-memory storage
 ```
 nektar/
 ├── cmd/nektar/              # Application entrypoint
+├── cmd/nektar-gmail-auth/   # OAuth helper to obtain Gmail refresh tokens
 ├── internal/
-│   ├── modules/             # Business capabilities (handler stubs)
+│   ├── modules/             # Business capabilities (fetcher implemented; others stubbed)
 │   ├── ports/               # Interface contracts
 │   │   ├── embedding/       # EmbeddingProvider
 │   │   ├── summary/         # SummaryProvider
@@ -142,7 +143,33 @@ cache:
   provider: inmemory
 ```
 
-Note: Gmail and Gemini adapters still require valid credentials to bootstrap. Set empty credentials only if you plan to stub those adapters for local dev.
+Note: Gemini still requires a valid API key to bootstrap. Gmail OAuth app credentials are needed for live fetch; refresh tokens are resolved per user at runtime (see Gmail setup below).
+
+### Gmail OAuth Setup
+
+1. Create an OAuth 2.0 Client ID (Desktop or Web) in Google Cloud Console with redirect URI `http://localhost:8085/oauth2/callback`.
+2. Enable the Gmail API for the project.
+3. Obtain a refresh token:
+
+```bash
+go run ./cmd/nektar-gmail-auth \
+  -client-id="$NEKTAR_GMAIL_CLIENT_ID" \
+  -client-secret="$NEKTAR_GMAIL_CLIENT_SECRET" \
+  -ref=alice
+```
+
+4. Put the printed snippet into `configs/config.yaml` under `gmail.refresh_tokens`.
+5. Seed a user and sync cursor (example SQL):
+
+```sql
+INSERT INTO users (id, email, name, created_at, updated_at)
+VALUES ('user-1', 'you@example.com', 'You', now(), now());
+
+INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token_ref)
+VALUES ('user-1', '', now(), 'newer_than:7d', 'alice');
+```
+
+`refresh_token_ref` must match a key in `gmail.refresh_tokens`. Leave `history_id` empty for the first bootstrap list sync; subsequent runs use the History API.
 
 ### Environment Overrides
 
@@ -179,9 +206,8 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Foundation | Complete | Architecture, ports, bootstrap, adapters |
 | Phase 0 | Complete | Domain model, validation, repository ports, split LLM ports |
 | Phase 1 | Complete | PostgreSQL schema, migrations, repository implementations |
-| Phase 2+ | Pending | Fetch pipeline, detection, extraction, and remaining modules |
-
-Business logic in modules is still stubbed. Persistence is ready for Phase 2 to start writing through the repository ports.
+| Phase 2 | Complete | Multi-user Gmail fetch, History sync, EmailFetched publishing |
+| Phase 3+ | Pending | Newsletter detection, extraction, and remaining modules |
 
 ## License
 
