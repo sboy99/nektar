@@ -20,10 +20,10 @@ type Registry struct {
 	NewslettersDetected prometheus.Counter
 	EmailsRejected      prometheus.Counter
 
-	ArticlesExtracted   prometheus.Counter
-	ArticlesDuplicated  prometheus.Counter
-	ExtractionErrors    *prometheus.CounterVec
-	ExtractionDuration  prometheus.Histogram
+	ArticlesExtracted  prometheus.Counter
+	ArticlesDuplicated prometheus.Counter
+	ExtractionErrors   *prometheus.CounterVec
+	ExtractionDuration prometheus.Histogram
 
 	EmbeddingsGenerated prometheus.Counter
 	EmbeddingErrors     *prometheus.CounterVec

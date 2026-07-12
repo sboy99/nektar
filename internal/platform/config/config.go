@@ -22,15 +22,15 @@ type Config struct {
 	Gmail      GmailConfig      `mapstructure:"gmail"`
 	Gemini     GeminiConfig     `mapstructure:"gemini"`
 	Discord    DiscordConfig    `mapstructure:"discord"`
-	Newsletter  NewsletterConfig  `mapstructure:"newsletter"`
-	Extraction  ExtractionConfig  `mapstructure:"extraction"`
-	Embedding   EmbeddingConfig   `mapstructure:"embedding"`
-	Clustering  ClusteringConfig  `mapstructure:"clustering"`
-	Digest      DigestConfig      `mapstructure:"digest"`
-	Scheduler   SchedulerConfig   `mapstructure:"scheduler"`
-	Server      ServerConfig      `mapstructure:"server"`
-	Logging     LoggingConfig     `mapstructure:"logging"`
-	Retry       RetryConfig       `mapstructure:"retry"`
+	Newsletter NewsletterConfig `mapstructure:"newsletter"`
+	Extraction ExtractionConfig `mapstructure:"extraction"`
+	Embedding  EmbeddingConfig  `mapstructure:"embedding"`
+	Clustering ClusteringConfig `mapstructure:"clustering"`
+	Digest     DigestConfig     `mapstructure:"digest"`
+	Scheduler  SchedulerConfig  `mapstructure:"scheduler"`
+	Server     ServerConfig     `mapstructure:"server"`
+	Logging    LoggingConfig    `mapstructure:"logging"`
+	Retry      RetryConfig      `mapstructure:"retry"`
 }
 
 // ProviderConfig selects an infrastructure implementation.

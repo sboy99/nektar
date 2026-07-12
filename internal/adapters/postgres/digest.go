@@ -83,11 +83,11 @@ func (r *digestRepo) ListRecent(ctx context.Context, userID string, limit int) (
 
 func scanDigest(row scannable) (*domain.Digest, error) {
 	var (
-		digest        domain.Digest
-		status        string
-		articleIDs    []string
-		clusterIDs    []string
-		publishedAt   *time.Time
+		digest      domain.Digest
+		status      string
+		articleIDs  []string
+		clusterIDs  []string
+		publishedAt *time.Time
 	)
 	err := row.Scan(
 		&digest.ID, &digest.UserID, &digest.Title, &digest.Markdown, &digest.Summary,

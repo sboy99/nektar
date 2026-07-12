@@ -1,4 +1,4 @@
-.PHONY: build run test lint deps infra-up infra-down clean
+.PHONY: build run test lint hooks deps infra-up infra-down clean
 
 BINARY := bin/nektar
 CONFIG := configs/config.yaml
@@ -13,7 +13,11 @@ test:
 	go test ./...
 
 lint:
+	gofmt -l . | (! grep .)
 	go vet ./...
+
+hooks:
+	git config core.hooksPath .githooks
 
 deps:
 	go mod tidy

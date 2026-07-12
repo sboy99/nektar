@@ -41,10 +41,10 @@ func renderDigestMarkdown(tmpl string, title, intro string, sections []topicSect
 	}
 
 	return renderPrompt(tmpl, map[string]string{
-		"title":         title,
-		"intro":         intro,
-		"sections":      strings.TrimSpace(body.String()),
-		"reading_time":  strconv.Itoa(readingTime),
+		"title":        title,
+		"intro":        intro,
+		"sections":     strings.TrimSpace(body.String()),
+		"reading_time": strconv.Itoa(readingTime),
 	})
 }
 

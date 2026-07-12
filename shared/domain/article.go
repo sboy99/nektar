@@ -6,9 +6,9 @@ import "time"
 type ContentFormat string
 
 const (
-	ContentFormatHTML       ContentFormat = "html"
-	ContentFormatMarkdown   ContentFormat = "markdown"
-	ContentFormatPlainText  ContentFormat = "plain_text"
+	ContentFormatHTML      ContentFormat = "html"
+	ContentFormatMarkdown  ContentFormat = "markdown"
+	ContentFormatPlainText ContentFormat = "plain_text"
 )
 
 // Article is the aggregate root for extracted newsletter content.

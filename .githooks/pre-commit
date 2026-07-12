@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+staged_go=()
+while IFS= read -r file; do
+	[[ -n "$file" ]] || continue
+	staged_go+=("$file")
+done < <(git diff --cached --name-only --diff-filter=ACMR -- '*.go')
+
+if ((${#staged_go[@]} > 0)); then
+	echo "==> pre-commit: gofmt (write + re-stage)"
+	gofmt -w "${staged_go[@]}"
+	git add -- "${staged_go[@]}"
+fi
+
+echo "==> pre-commit: go vet"
+go vet ./...
+
+echo "==> pre-commit: ok"

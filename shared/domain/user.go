@@ -13,9 +13,9 @@ type User struct {
 
 // GmailSync holds incremental Gmail sync cursor state for a user.
 type GmailSync struct {
-	UserID           string
-	HistoryID        string
-	LastSyncedAt     time.Time
-	Query            string
-	RefreshTokenRef  string
+	UserID          string
+	HistoryID       string
+	LastSyncedAt    time.Time
+	Query           string
+	RefreshTokenRef string
 }

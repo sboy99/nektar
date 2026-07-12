@@ -108,7 +108,6 @@ func (b *Bus) Close() error {
 	return nil
 }
 
-
 // --- Cache ---
 
 type cacheEntry struct {
@@ -215,7 +214,7 @@ func (s *Storage) Clusters() repository.ClusterRepository       { return &cluste
 func (s *Storage) Digests() repository.DigestRepository         { return &digestRepo{s} }
 func (s *Storage) Embeddings() repository.EmbeddingRepository   { return &embeddingRepo{s} }
 func (s *Storage) LLMRequests() repository.LLMRequestRepository { return &llmRequestRepo{s} }
-func (s *Storage) Ping(_ context.Context) error                  { return nil }
+func (s *Storage) Ping(_ context.Context) error                 { return nil }
 func (s *Storage) Close() error                                 { return nil }
 
 type userRepo struct{ s *Storage }
