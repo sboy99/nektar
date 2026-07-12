@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"time"
 
 	"github.com/sboy99/nektar/shared/domain"
 )
@@ -98,6 +99,14 @@ func (r *emailRepo) ListByUser(ctx context.Context, userID string, limit int) ([
 	}
 	defer rows.Close()
 	return scanEmails(rows)
+}
+
+func (r *emailRepo) DeleteOlderThan(ctx context.Context, before time.Time) (int64, error) {
+	tag, err := r.s.pool.Exec(ctx, `DELETE FROM emails WHERE received_at < $1`, before)
+	if err != nil {
+		return 0, err
+	}
+	return tag.RowsAffected(), nil
 }
 
 func scanEmail(row scannable) (*domain.Email, error) {

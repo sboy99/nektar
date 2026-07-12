@@ -232,6 +232,68 @@ func (b *Bus) moveToDLQ(ctx context.Context, topic string, msg goredis.XMessage,
 	}
 }
 
+// ReplayDLQ re-publishes up to limitPerTopic messages from each topic's DLQ
+// back onto the main stream and removes them from the DLQ.
+func (b *Bus) ReplayDLQ(ctx context.Context, topics []string, limitPerTopic int) (int, error) {
+	if limitPerTopic <= 0 {
+		limitPerTopic = 100
+	}
+	total := 0
+	for _, topic := range topics {
+		dlq := b.dlqKey(topic)
+		msgs, err := b.client.XRangeN(ctx, dlq, "-", "+", int64(limitPerTopic)).Result()
+		if err != nil {
+			return total, fmt.Errorf("xrange dlq %s: %w", topic, err)
+		}
+		for _, msg := range msgs {
+			eventName, _ := msg.Values["event_name"].(string)
+			payload, _ := msg.Values["payload"].(string)
+			if eventName == "" {
+				eventName, _ = msg.Values[fieldEventName].(string)
+			}
+			if payload == "" {
+				payload, _ = msg.Values[fieldPayload].(string)
+			}
+			if _, err := b.client.XAdd(ctx, &goredis.XAddArgs{
+				Stream: b.streamKey(topic),
+				Values: map[string]any{
+					fieldEventName: eventName,
+					fieldPayload:   payload,
+				},
+			}).Result(); err != nil {
+				return total, fmt.Errorf("xadd replay %s: %w", topic, err)
+			}
+			if err := b.client.XDel(ctx, dlq, msg.ID).Err(); err != nil {
+				return total, fmt.Errorf("xdel dlq %s: %w", topic, err)
+			}
+			total++
+		}
+	}
+	return total, nil
+}
+
+// Trim removes stream entries older than olderThan using XTRIM MINID.
+func (b *Bus) Trim(ctx context.Context, topics []string, olderThan time.Duration) (int, error) {
+	if olderThan <= 0 {
+		return 0, nil
+	}
+	minID := fmt.Sprintf("%d-0", time.Now().Add(-olderThan).UnixMilli())
+	total := 0
+	for _, topic := range topics {
+		n, err := b.client.XTrimMinIDApprox(ctx, b.streamKey(topic), minID, 0).Result()
+		if err != nil {
+			return total, fmt.Errorf("xtrim %s: %w", topic, err)
+		}
+		total += int(n)
+		dlqN, err := b.client.XTrimMinIDApprox(ctx, b.dlqKey(topic), minID, 0).Result()
+		if err != nil {
+			return total, fmt.Errorf("xtrim dlq %s: %w", topic, err)
+		}
+		total += int(dlqN)
+	}
+	return total, nil
+}
+
 // Close stops consumers and closes the Redis client.
 func (b *Bus) Close() error {
 	if b.cancel != nil {

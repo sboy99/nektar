@@ -51,6 +51,16 @@ func (b *Bus) Subscribe(_ context.Context, topic string, handler eventbus.Handle
 	return nil
 }
 
+// ReplayDLQ is a no-op for the in-memory bus (no DLQ).
+func (b *Bus) ReplayDLQ(_ context.Context, _ []string, _ int) (int, error) {
+	return 0, nil
+}
+
+// Trim is a no-op for the in-memory bus (no stream retention).
+func (b *Bus) Trim(_ context.Context, _ []string, _ time.Duration) (int, error) {
+	return 0, nil
+}
+
 // Close shuts down the bus.
 func (b *Bus) Close() error {
 	b.mu.Lock()
@@ -110,6 +120,21 @@ func (c *Cache) Delete(_ context.Context, key string) error {
 
 	delete(c.items, key)
 	return nil
+}
+
+func (c *Cache) PurgeExpired(_ context.Context) (int, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	now := time.Now()
+	n := 0
+	for key, entry := range c.items {
+		if !entry.expiresAt.IsZero() && now.After(entry.expiresAt) {
+			delete(c.items, key)
+			n++
+		}
+	}
+	return n, nil
 }
 
 // --- Storage ---
@@ -262,6 +287,30 @@ func (r *emailRepo) ListByUser(_ context.Context, userID string, limit int) ([]*
 		}
 	}
 	return result, nil
+}
+
+func (r *emailRepo) DeleteOlderThan(_ context.Context, before time.Time) (int64, error) {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+
+	var deleted int64
+	for id, e := range r.s.emails {
+		if e.ReceivedAt.Before(before) {
+			for aid, a := range r.s.articles {
+				if a.EmailID == id {
+					for eid, emb := range r.s.embeddings {
+						if emb.ArticleID == aid {
+							delete(r.s.embeddings, eid)
+						}
+					}
+					delete(r.s.articles, aid)
+				}
+			}
+			delete(r.s.emails, id)
+			deleted++
+		}
+	}
+	return deleted, nil
 }
 
 type articleRepo struct{ s *Storage }

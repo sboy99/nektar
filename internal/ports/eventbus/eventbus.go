@@ -1,6 +1,9 @@
 package eventbus
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // Event is a domain event published on the bus.
 type Event interface {
@@ -16,5 +19,7 @@ type Handler func(ctx context.Context, event Event) error
 type EventBus interface {
 	Publish(ctx context.Context, event Event) error
 	Subscribe(ctx context.Context, topic string, handler Handler) error
+	ReplayDLQ(ctx context.Context, topics []string, limitPerTopic int) (int, error)
+	Trim(ctx context.Context, topics []string, olderThan time.Duration) (int, error)
 	Close() error
 }

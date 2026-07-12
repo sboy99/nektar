@@ -18,6 +18,7 @@ import (
 	"github.com/sboy99/nektar/internal/modules/embedding"
 	"github.com/sboy99/nektar/internal/modules/extractor"
 	"github.com/sboy99/nektar/internal/modules/fetcher"
+	"github.com/sboy99/nektar/internal/modules/jobs"
 	"github.com/sboy99/nektar/internal/modules/newsletter"
 	modpublisher "github.com/sboy99/nektar/internal/modules/publisher"
 	"github.com/sboy99/nektar/internal/platform/config"
@@ -228,12 +229,45 @@ func registerHandlers(ctx context.Context, app *App) {
 
 func registerSchedulerJobs(app *App) {
 	app.Scheduler.Register(scheduler.Job{
-		Name:     "fetcher",
+		Name:     "fetch_gmail",
 		Interval: app.Config.Scheduler.FetchInterval,
 		Fn: fetcher.Handle(app.Logger, app.Email, app.Storage, app.EventBus, fetcher.Config{
 			RefreshTokens: app.Config.Gmail.RefreshTokens,
 			DefaultQuery:  app.Config.Gmail.DefaultQuery,
 			Metrics:       app.Metrics,
+		}),
+	})
+	app.Scheduler.Register(scheduler.Job{
+		Name:     "retry_failures",
+		Interval: app.Config.Scheduler.RetryInterval,
+		Fn: jobs.RetryFailures(app.Logger, app.EventBus, jobs.RetryConfig{
+			LimitPerTopic: app.Config.Scheduler.DLQReplayLimit,
+		}),
+	})
+	app.Scheduler.Register(scheduler.Job{
+		Name:     "publish_digest",
+		Interval: app.Config.Scheduler.PublishInterval,
+		Fn: jobs.PublishDigest(app.Logger, app.Storage, app.Publisher, jobs.PublishConfig{
+			Metrics: app.Metrics,
+		}),
+	})
+	app.Scheduler.Register(scheduler.Job{
+		Name:     "cleanup_cache",
+		Interval: app.Config.Scheduler.CacheCleanupInterval,
+		Fn:       jobs.CleanupCache(app.Logger, app.Cache),
+	})
+	app.Scheduler.Register(scheduler.Job{
+		Name:     "cleanup_old_events",
+		Interval: app.Config.Scheduler.EventsCleanupInterval,
+		Fn: jobs.CleanupOldEvents(app.Logger, app.EventBus, app.Storage, jobs.CleanupEventsConfig{
+			Retention: app.Config.Scheduler.EventRetention,
+		}),
+	})
+	app.Scheduler.Register(scheduler.Job{
+		Name:     "refresh_oauth",
+		Interval: app.Config.Scheduler.OAuthRefreshInterval,
+		Fn: jobs.RefreshOAuth(app.Logger, app.Email, app.Storage, jobs.OAuthConfig{
+			RefreshTokens: app.Config.Gmail.RefreshTokens,
 		}),
 	})
 }

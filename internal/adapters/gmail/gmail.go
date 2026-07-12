@@ -48,6 +48,31 @@ func NewProviderWithClient(client *http.Client, defaultQuery, endpoint string) *
 	return &Provider{client: client, defaultQuery: defaultQuery, endpoint: endpoint}
 }
 
+// RefreshToken forces an OAuth access-token refresh for the given refresh token.
+func (p *Provider) RefreshToken(ctx context.Context, refreshToken string) error {
+	if p.client != nil {
+		return nil
+	}
+	if refreshToken == "" {
+		return fmt.Errorf("gmail: refresh token is required")
+	}
+	oauthCfg := &oauth2.Config{
+		ClientID:     p.clientID,
+		ClientSecret: p.clientSecret,
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://accounts.google.com/o/oauth2/auth",
+			TokenURL: "https://oauth2.googleapis.com/token",
+		},
+		Scopes: []string{gmail.GmailReadonlyScope},
+	}
+	token := &oauth2.Token{RefreshToken: refreshToken}
+	_, err := oauthCfg.TokenSource(ctx, token).Token()
+	if err != nil {
+		return fmt.Errorf("gmail: refresh token: %w", err)
+	}
+	return nil
+}
+
 // Fetch retrieves emails for one user using History API or a query bootstrap.
 func (p *Provider) Fetch(ctx context.Context, params portemail.FetchParams) (*portemail.FetchResult, error) {
 	if params.RefreshToken == "" && p.client == nil {

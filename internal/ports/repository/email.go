@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/sboy99/nektar/shared/domain"
 )
@@ -13,4 +14,5 @@ type EmailRepository interface {
 	FindByGmailMessageID(ctx context.Context, userID, gmailMessageID string) (*domain.Email, error)
 	ListUnprocessed(ctx context.Context, userID string) ([]*domain.Email, error)
 	ListByUser(ctx context.Context, userID string, limit int) ([]*domain.Email, error)
+	DeleteOlderThan(ctx context.Context, before time.Time) (int64, error)
 }

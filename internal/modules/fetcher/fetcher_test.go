@@ -28,6 +28,10 @@ func (s *stubProvider) Fetch(_ context.Context, _ portemail.FetchParams) (*porte
 	return s.result, nil
 }
 
+func (s *stubProvider) RefreshToken(_ context.Context, _ string) error {
+	return nil
+}
+
 func TestHandleFetchesDedupesAndPublishes(t *testing.T) {
 	ctx := context.Background()
 	storage := inmemory.NewStorage()

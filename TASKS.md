@@ -62,7 +62,11 @@ Digest builder: importance ranking/filtering, file-based prompts, Gemini summari
 
 Discord publisher: markdown/embed builders, webhook client with retry, digest status updates, and publish metrics.
 
-Remaining work is primarily scheduling, testing, and deployment.
+## Phase 9 Complete
+
+Scheduler jobs: fetch Gmail, DLQ replay, unpublished digest catch-up, cache purge, event/email retention cleanup, and OAuth refresh probes — each with configurable intervals.
+
+Remaining work is primarily observability polish, testing, and deployment.
 
 ---
 
@@ -426,12 +430,12 @@ prompts/
 
 Document every scheduled job.
 
-- [ ] Fetch Gmail
-- [ ] Retry failures
-- [ ] Publish digest
-- [ ] Cleanup cache
-- [ ] Cleanup old events
-- [ ] Refresh OAuth
+- [x] Fetch Gmail
+- [x] Retry failures
+- [x] Publish digest
+- [x] Cleanup cache
+- [x] Cleanup old events
+- [x] Refresh OAuth
 
 ---
 
@@ -461,7 +465,7 @@ Track:
 ## Reliability
 
 - [ ] Retry policy
-- [ ] DLQ replay
+- [x] DLQ replay
 - [ ] Readiness probe
 - [ ] Graceful shutdown
 
@@ -573,7 +577,7 @@ Knowledge Item
 
 The MVP is complete when:
 
-- [ ] Scheduler fetches newsletters from Gmail
+- [x] Scheduler fetches newsletters from Gmail
 - [x] Newsletter detector filters non-newsletters
 - [x] Articles are extracted and normalized
 - [ ] Embeddings are generated

@@ -72,6 +72,13 @@ digest:
 
 scheduler:
   fetch_interval: 15m
+  retry_interval: 5m
+  publish_interval: 1h
+  cache_cleanup_interval: 24h
+  events_cleanup_interval: 24h
+  oauth_refresh_interval: 12h
+  dlq_replay_limit: 100
+  event_retention: 168h
 
 server:
   addr: ":8080"

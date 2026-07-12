@@ -112,7 +112,14 @@ type ExtractionConfig struct {
 
 // SchedulerConfig configures the job scheduler.
 type SchedulerConfig struct {
-	FetchInterval time.Duration `mapstructure:"fetch_interval"`
+	FetchInterval         time.Duration `mapstructure:"fetch_interval"`
+	RetryInterval         time.Duration `mapstructure:"retry_interval"`
+	PublishInterval       time.Duration `mapstructure:"publish_interval"`
+	CacheCleanupInterval  time.Duration `mapstructure:"cache_cleanup_interval"`
+	EventsCleanupInterval time.Duration `mapstructure:"events_cleanup_interval"`
+	OAuthRefreshInterval  time.Duration `mapstructure:"oauth_refresh_interval"`
+	DLQReplayLimit        int           `mapstructure:"dlq_replay_limit"`
+	EventRetention        time.Duration `mapstructure:"event_retention"`
 }
 
 // ServerConfig configures the HTTP server for metrics/health.
@@ -186,5 +193,12 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("digest.cost_per_1m_tokens", 0.10)
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
+	v.SetDefault("scheduler.retry_interval", "5m")
+	v.SetDefault("scheduler.publish_interval", "1h")
+	v.SetDefault("scheduler.cache_cleanup_interval", "24h")
+	v.SetDefault("scheduler.events_cleanup_interval", "24h")
+	v.SetDefault("scheduler.oauth_refresh_interval", "12h")
+	v.SetDefault("scheduler.dlq_replay_limit", 100)
+	v.SetDefault("scheduler.event_retention", "168h")
 	v.SetDefault("server.addr", ":8080")
 }

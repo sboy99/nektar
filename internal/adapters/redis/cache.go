@@ -37,6 +37,11 @@ func (c *Cache) Delete(ctx context.Context, key string) error {
 	return c.client.Del(ctx, key).Err()
 }
 
+// PurgeExpired is a no-op for Redis; key TTLs handle eviction.
+func (c *Cache) PurgeExpired(_ context.Context) (int, error) {
+	return 0, nil
+}
+
 // NewClient creates a Redis client from address and credentials.
 func NewClient(addr, password string, db int) *goredis.Client {
 	return goredis.NewClient(&goredis.Options{

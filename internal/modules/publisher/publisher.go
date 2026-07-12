@@ -34,7 +34,7 @@ func Handle(
 		}
 
 		start := time.Now()
-		err := process(ctx, logger, storage, pub, cfg, ready)
+		err := PublishDigest(ctx, logger, storage, pub, cfg, ready.DigestID)
 		if cfg.Metrics != nil {
 			cfg.Metrics.PublishDuration.Observe(time.Since(start).Seconds())
 		}
@@ -48,15 +48,17 @@ func Handle(
 	}
 }
 
-func process(
+// PublishDigest loads a digest by ID and publishes it if status is ready.
+// Idempotent for already-published digests; skips non-ready digests.
+func PublishDigest(
 	ctx context.Context,
 	logger *slog.Logger,
 	storage repository.Storage,
 	pub portpublisher.Publisher,
 	cfg Config,
-	ready events.DigestReady,
+	digestID string,
 ) error {
-	dig, err := storage.Digests().FindByID(ctx, ready.DigestID)
+	dig, err := storage.Digests().FindByID(ctx, digestID)
 	if err != nil {
 		return fmt.Errorf("publisher: find digest: %w", err)
 	}

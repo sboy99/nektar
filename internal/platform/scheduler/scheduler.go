@@ -46,10 +46,14 @@ func (s *Scheduler) Start(ctx context.Context) {
 func (s *Scheduler) runJob(ctx context.Context, job Job) {
 	defer s.wg.Done()
 
+	s.logger.Info("scheduler job started", "job", job.Name, "interval", job.Interval)
+
+	if err := job.Fn(ctx); err != nil {
+		s.logger.Error("scheduler job failed", "job", job.Name, "error", err)
+	}
+
 	ticker := time.NewTicker(job.Interval)
 	defer ticker.Stop()
-
-	s.logger.Info("scheduler job started", "job", job.Name, "interval", job.Interval)
 
 	for {
 		select {

@@ -92,7 +92,7 @@ nektar/
 ├── cmd/nektar/              # Application entrypoint
 ├── cmd/nektar-gmail-auth/   # OAuth helper to obtain Gmail refresh tokens
 ├── internal/
-│   ├── modules/             # Business capabilities (fetcher, newsletter, extractor, embedding; others stubbed)
+│   ├── modules/             # Business capabilities (fetcher → publisher, jobs)
 │   ├── ports/               # Interface contracts
 │   │   ├── embedding/       # EmbeddingProvider
 │   │   ├── summary/         # SummaryProvider
@@ -208,6 +208,31 @@ embedding:
   cache_ttl: 720h
 ```
 
+### Scheduled Jobs
+
+Jobs run immediately on startup, then on a fixed interval. Configure under `scheduler:`:
+
+| Job | Config key | Default | Behavior |
+|-----|------------|---------|----------|
+| `fetch_gmail` | `fetch_interval` | `15m` | Fetch new emails for all Gmail sync users |
+| `retry_failures` | `retry_interval` | `5m` | Replay DLQ messages onto main event streams |
+| `publish_digest` | `publish_interval` | `1h` | Publish ready unpublished digests (catch-up) |
+| `cleanup_cache` | `cache_cleanup_interval` | `24h` | Purge expired in-memory cache entries |
+| `cleanup_old_events` | `events_cleanup_interval` | `24h` | Trim old stream entries and delete emails older than `event_retention` |
+| `refresh_oauth` | `oauth_refresh_interval` | `12h` | Probe/refresh Gmail OAuth tokens |
+
+```yaml
+scheduler:
+  fetch_interval: 15m
+  retry_interval: 5m
+  publish_interval: 1h
+  cache_cleanup_interval: 24h
+  events_cleanup_interval: 24h
+  oauth_refresh_interval: 12h
+  dlq_replay_limit: 100
+  event_retention: 168h
+```
+
 ### Environment Overrides
 
 Any config value can be overridden via environment variables with the `NEKTAR_` prefix:
@@ -247,7 +272,10 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 3 | Complete | Heuristic newsletter detection, EmailDetected, allow/deny lists |
 | Phase 4 | Complete | Extraction pipeline, article split, ArticleCreated |
 | Phase 5 | Complete | Embedding generation, cache, cost tracking, EmbeddingCreated |
-| Phase 7+ | Digest done; publisher pending | Publisher, scheduler |
+| Phase 6 | Complete | Topic clustering, ClusterUpdated |
+| Phase 7 | Complete | Digest builder, prompts, DigestReady |
+| Phase 8 | Complete | Discord publisher, webhook retry, publish metrics |
+| Phase 9 | Complete | Scheduler jobs (fetch, retry, publish, cleanup, OAuth) |
 
 ## License
 
