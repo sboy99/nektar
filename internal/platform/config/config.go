@@ -26,6 +26,7 @@ type Config struct {
 	Extraction  ExtractionConfig  `mapstructure:"extraction"`
 	Embedding   EmbeddingConfig   `mapstructure:"embedding"`
 	Clustering  ClusteringConfig  `mapstructure:"clustering"`
+	Digest      DigestConfig      `mapstructure:"digest"`
 	Scheduler   SchedulerConfig   `mapstructure:"scheduler"`
 	Server      ServerConfig      `mapstructure:"server"`
 }
@@ -76,6 +77,19 @@ type EmbeddingConfig struct {
 type ClusteringConfig struct {
 	SimilarityThreshold float64 `mapstructure:"similarity_threshold"`
 	MergeThreshold      float64 `mapstructure:"merge_threshold"`
+}
+
+// DigestConfig configures the digest builder pipeline.
+type DigestConfig struct {
+	PromptsDir            string        `mapstructure:"prompts_dir"`
+	Lookback              time.Duration `mapstructure:"lookback"`
+	MinArticles           int           `mapstructure:"min_articles"`
+	MinClusters           int           `mapstructure:"min_clusters"`
+	MinClusterSize        int           `mapstructure:"min_cluster_size"`
+	MaxClusters           int           `mapstructure:"max_clusters"`
+	MaxArticlesPerCluster int           `mapstructure:"max_articles_per_cluster"`
+	WordsPerMinute        int           `mapstructure:"words_per_minute"`
+	CostPer1MTokens       float64       `mapstructure:"cost_per_1m_tokens"`
 }
 
 // DiscordConfig configures Discord webhook publishing.
@@ -160,6 +174,16 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("clustering.similarity_threshold", 0.75)
 	v.SetDefault("clustering.merge_threshold", 0.90)
+
+	v.SetDefault("digest.prompts_dir", "prompts")
+	v.SetDefault("digest.lookback", "24h")
+	v.SetDefault("digest.min_articles", 3)
+	v.SetDefault("digest.min_clusters", 1)
+	v.SetDefault("digest.min_cluster_size", 1)
+	v.SetDefault("digest.max_clusters", 10)
+	v.SetDefault("digest.max_articles_per_cluster", 5)
+	v.SetDefault("digest.words_per_minute", 200)
+	v.SetDefault("digest.cost_per_1m_tokens", 0.10)
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
 	v.SetDefault("server.addr", ":8080")

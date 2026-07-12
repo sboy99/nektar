@@ -59,6 +59,17 @@ clustering:
   similarity_threshold: 0.75
   merge_threshold: 0.90
 
+digest:
+  prompts_dir: prompts
+  lookback: 24h
+  min_articles: 3
+  min_clusters: 1
+  min_cluster_size: 1
+  max_clusters: 10
+  max_articles_per_cluster: 5
+  words_per_minute: 200
+  cost_per_1m_tokens: 0.10
+
 scheduler:
   fetch_interval: 15m
 

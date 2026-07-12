@@ -205,7 +205,22 @@ func registerHandlers(ctx context.Context, app *App) {
 			Metrics:             app.Metrics,
 		},
 	))
-	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(log))
+	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(
+		log, app.Storage, app.EventBus, app.Summarizer, digest.Config{
+			PromptsDir:            app.Config.Digest.PromptsDir,
+			Lookback:              app.Config.Digest.Lookback,
+			MinArticles:           app.Config.Digest.MinArticles,
+			MinClusters:           app.Config.Digest.MinClusters,
+			MinClusterSize:        app.Config.Digest.MinClusterSize,
+			MaxClusters:           app.Config.Digest.MaxClusters,
+			MaxArticlesPerCluster: app.Config.Digest.MaxArticlesPerCluster,
+			WordsPerMinute:        app.Config.Digest.WordsPerMinute,
+			Provider:              app.Config.LLM.Provider,
+			Model:                 app.Config.Gemini.Model,
+			CostPer1MTokens:       app.Config.Digest.CostPer1MTokens,
+			Metrics:               app.Metrics,
+		},
+	))
 	_ = app.EventBus.Subscribe(ctx, events.TopicDigestReady, modpublisher.Handle(log, app.Publisher))
 }
 

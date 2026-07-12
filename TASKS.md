@@ -50,7 +50,15 @@ Extraction pipeline: MIME/HTML/plain parsing, HTML normalization, markdown conve
 
 Embedding pipeline: Gemini EmbedContent, content-addressed cache, persistence, LLMRequest cost tracking, and `EmbeddingCreated` events.
 
-Remaining work is primarily clustering and later pipeline stages, testing, and deployment.
+## Phase 6 Complete
+
+Topic clustering: nearest-neighbor assignment, centroid updates, merge, and `ClusterUpdated` events.
+
+## Phase 7 Complete
+
+Digest builder: importance ranking/filtering, file-based prompts, Gemini summarization, markdown digests, and `DigestReady` events.
+
+Remaining work is primarily publishing, scheduling, testing, and deployment.
 
 ---
 
@@ -366,16 +374,16 @@ Digest
 
 ## Builder
 
-- [ ] Importance scoring
-- [ ] Ranking
-- [ ] Topic ordering
-- [ ] Reading time
+- [x] Importance scoring
+- [x] Ranking
+- [x] Topic ordering
+- [x] Reading time
 
 ## Summary
 
-- [ ] Prompt templates
-- [ ] LLM summary
-- [ ] Markdown rendering
+- [x] Prompt templates
+- [x] LLM summary
+- [x] Markdown rendering
 
 ## Prompt Management
 
@@ -433,9 +441,9 @@ Track:
 - [x] Newsletters detected
 - [x] Articles extracted
 - [x] Embeddings generated
-- [ ] Clusters created
+- [x] Clusters created
 - [ ] Duplicate articles
-- [ ] Digest latency
+- [x] Digest latency
 - [ ] Publish latency
 - [x] LLM latency
 - [x] Token usage

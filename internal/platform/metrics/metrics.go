@@ -30,11 +30,15 @@ type Registry struct {
 	LLMLatency          *prometheus.HistogramVec
 	LLMTokens           *prometheus.CounterVec
 
-	ClustersCreated     prometheus.Counter
-	ClustersMerged      prometheus.Counter
-	ArticlesClustered   prometheus.Counter
-	ClusteringErrors    *prometheus.CounterVec
-	ClusteringDuration  prometheus.Histogram
+	ClustersCreated    prometheus.Counter
+	ClustersMerged     prometheus.Counter
+	ArticlesClustered  prometheus.Counter
+	ClusteringErrors   *prometheus.CounterVec
+	ClusteringDuration prometheus.Histogram
+
+	DigestsGenerated prometheus.Counter
+	DigestErrors     *prometheus.CounterVec
+	DigestDuration   prometheus.Histogram
 }
 
 // NewRegistry creates and registers application metrics.
@@ -160,6 +164,22 @@ func NewRegistry() *Registry {
 			Help:    "Duration of a clustering handler run",
 			Buckets: prometheus.DefBuckets,
 		}),
+		DigestsGenerated: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_digests_generated_total",
+			Help: "Total number of digests marked ready",
+		}),
+		DigestErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_digest_errors_total",
+				Help: "Total number of digest pipeline errors",
+			},
+			[]string{"reason"},
+		),
+		DigestDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    "nektar_digest_duration_seconds",
+			Help:    "Duration of a digest handler run",
+			Buckets: prometheus.DefBuckets,
+		}),
 	}
 
 	prometheus.MustRegister(
@@ -185,6 +205,9 @@ func NewRegistry() *Registry {
 		r.ArticlesClustered,
 		r.ClusteringErrors,
 		r.ClusteringDuration,
+		r.DigestsGenerated,
+		r.DigestErrors,
+		r.DigestDuration,
 	)
 
 	return r

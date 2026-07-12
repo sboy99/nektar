@@ -3,11 +3,11 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/genai"
 
 	portembedding "github.com/sboy99/nektar/internal/ports/embedding"
-	"github.com/sboy99/nektar/internal/shared/errors"
 )
 
 // Provider implements embedding and summary ports using Google Gemini.
@@ -92,9 +92,26 @@ func estimateTokens(text string) int {
 
 // Summarize generates a summary for the given text.
 func (p *Provider) Summarize(ctx context.Context, text string) (string, error) {
-	_ = ctx
-	_ = p.client
-	_ = p.model
-	_ = text
-	return "", errors.ErrNotImplemented
+	if strings.TrimSpace(text) == "" {
+		return "", fmt.Errorf("gemini: empty text")
+	}
+
+	model := p.model
+	if model == "" {
+		model = "gemini-2.0-flash"
+	}
+
+	resp, err := p.client.Models.GenerateContent(ctx, model, genai.Text(text), nil)
+	if err != nil {
+		return "", fmt.Errorf("gemini: summarize: %w", err)
+	}
+	if resp == nil {
+		return "", fmt.Errorf("gemini: empty summarize response")
+	}
+
+	out := strings.TrimSpace(resp.Text())
+	if out == "" {
+		return "", fmt.Errorf("gemini: empty summarize text")
+	}
+	return out, nil
 }

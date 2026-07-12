@@ -139,7 +139,7 @@ func (p *PipelineStatus) Validate() error {
 	if err := requireNonEmpty("id", p.ResourceID); err != nil {
 		return err
 	}
-	if p.ResourceType != ResourceTypeEmail && p.ResourceType != ResourceTypeArticle {
+	if p.ResourceType != ResourceTypeEmail && p.ResourceType != ResourceTypeArticle && p.ResourceType != ResourceTypeDigest {
 		return ErrInvalidResourceType
 	}
 	return nil
@@ -149,7 +149,7 @@ func (r *LLMRequest) Validate() error {
 	if err := requireNonEmpty("user_id", r.UserID); err != nil {
 		return err
 	}
-	if r.ResourceType != ResourceTypeEmail && r.ResourceType != ResourceTypeArticle {
+	if r.ResourceType != ResourceTypeEmail && r.ResourceType != ResourceTypeArticle && r.ResourceType != ResourceTypeDigest {
 		return ErrInvalidResourceType
 	}
 	return nil

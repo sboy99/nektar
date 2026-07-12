@@ -8,6 +8,7 @@ type ResourceType string
 const (
 	ResourceTypeEmail   ResourceType = "email"
 	ResourceTypeArticle ResourceType = "article"
+	ResourceTypeDigest  ResourceType = "digest"
 )
 
 // PipelineStage represents where a resource is in the processing pipeline.
