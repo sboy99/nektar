@@ -241,15 +241,17 @@ scheduler:
   event_retention: 168h
 ```
 
-### Environment Overrides
+### Environment Overrides / Secrets
 
-Any config value can be overridden via environment variables with the `NEKTAR_` prefix:
+Secrets load from `.env` (see `.env.example`). Any config value can also be set via `NEKTAR_*` env vars (OS env wins over `.env`):
 
 ```bash
+cp .env.example .env
+# edit .env — Gmail, Gemini, Discord, optional DSN
+
 export NEKTAR_EVENTBUS_PROVIDER=inmemory
 export NEKTAR_STORAGE_PROVIDER=postgres
 export NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable'
-export NEKTAR_GEMINI_API_KEY=your-key
 ```
 
 ### Integration Tests

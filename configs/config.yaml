@@ -18,30 +18,31 @@ publisher:
 
 redis:
   addr: localhost:6379
-  password: ""
+  # password: from NEKTAR_REDIS_PASSWORD in .env
   db: 0
   stream_prefix: nektar
   group_name: nektar-workers
   consumer_name: nektar-1
 
 postgres:
+  # dsn: from NEKTAR_POSTGRES_DSN in .env (default: local docker compose)
   dsn: postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
 
 gmail:
-  client_id: ""
-  client_secret: ""
+  # client_id / client_secret / refresh_tokens: from .env
+  #   NEKTAR_GMAIL_CLIENT_ID
+  #   NEKTAR_GMAIL_CLIENT_SECRET
+  #   NEKTAR_GMAIL_REFRESH_TOKENS={"alice":"..."}
   default_query: "newer_than:7d"
-  refresh_tokens: {}
 
 gemini:
-  api_key: ""
+  # api_key: from NEKTAR_GEMINI_API_KEY in .env
   model: gemini-2.0-flash
   embed_model: gemini-embedding-001
   embed_dimensions: 768
   embed_cost_per_1m_tokens: 0.15
 
-discord:
-  webhook_url: ""
+# discord.webhook_url from NEKTAR_DISCORD_WEBHOOK_URL in .env
 
 newsletter:
   score_threshold: 0.5

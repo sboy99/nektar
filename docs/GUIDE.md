@@ -79,32 +79,23 @@ Stop infra later with `make infra-down`.
 
 Copy or edit `configs/config.yaml`. Production defaults use Redis + Postgres + Gmail + Gemini + Discord.
 
-**Minimum secrets to set:**
-
-```yaml
-gmail:
-  client_id: "YOUR_GOOGLE_OAUTH_CLIENT_ID"
-  client_secret: "YOUR_GOOGLE_OAUTH_CLIENT_SECRET"
-  refresh_tokens: {}   # filled after OAuth (section 3.3)
-
-gemini:
-  api_key: "YOUR_GEMINI_API_KEY"
-
-discord:
-  webhook_url: "https://discord.com/api/webhooks/..."
-```
-
-Prefer env overrides for secrets (never commit them):
+**Minimum secrets to set** in `.env` (copy from `.env.example`):
 
 ```bash
-export NEKTAR_GMAIL_CLIENT_ID=...
-export NEKTAR_GMAIL_CLIENT_SECRET=...
-export NEKTAR_GEMINI_API_KEY=...
-export NEKTAR_DISCORD_WEBHOOK_URL=...
-export NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable'
+cp .env.example .env
 ```
 
-Env vars use the `NEKTAR_` prefix; nested keys use `_` (for example `gemini.api_key` → `NEKTAR_GEMINI_API_KEY`).
+```bash
+NEKTAR_GMAIL_CLIENT_ID=...
+NEKTAR_GMAIL_CLIENT_SECRET=...
+NEKTAR_GMAIL_REFRESH_TOKENS={"alice":"1//0g..."}
+NEKTAR_GEMINI_API_KEY=...
+NEKTAR_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+
+`configs/config.yaml` holds non-secret settings only. On startup, `config.Load` reads `.env` then `.env.local` from the working directory (optional override: `NEKTAR_ENV_FILE`). Existing OS env vars always win.
+
+You can still export the same `NEKTAR_*` variables in your shell instead of using a file.
 
 ### 3.3 Gmail OAuth
 
@@ -123,20 +114,14 @@ go run ./cmd/nektar-gmail-auth \
 ```
 
 3. Open the printed URL, approve access (read-only Gmail scope).
-4. Paste the printed YAML snippet into `configs/config.yaml` under `gmail.refresh_tokens`:
-
-```yaml
-gmail:
-  refresh_tokens:
-    alice: "1//0g..."
-```
+4. Add the printed `.env` lines (`NEKTAR_GMAIL_CLIENT_ID`, `NEKTAR_GMAIL_CLIENT_SECRET`, `NEKTAR_GMAIL_REFRESH_TOKENS`).
 
 The `ref` (`alice`) must match `refresh_token_ref` in the database sync row (next step).
 
 ### 3.4 Discord webhook
 
 1. Discord channel → **Edit Channel** → **Integrations** → **Webhooks** → **New Webhook**
-2. Copy the webhook URL into `discord.webhook_url` (or `NEKTAR_DISCORD_WEBHOOK_URL`)
+2. Copy the webhook URL into `NEKTAR_DISCORD_WEBHOOK_URL` in `.env`
 
 ### 3.5 Seed a user + Gmail sync cursor
 
@@ -154,7 +139,7 @@ SQL
 
 | Field | Meaning |
 |-------|---------|
-| `refresh_token_ref` | Key in `gmail.refresh_tokens` |
+| `refresh_token_ref` | Key inside `NEKTAR_GMAIL_REFRESH_TOKENS` JSON |
 | `query` | Gmail search for the first bootstrap sync |
 | `history_id` | Leave empty for the first run; History API fills it afterward |
 
@@ -277,7 +262,7 @@ make test-integration
 Each Gmail mailbox is a `users` + `gmail_sync` pair with its own `refresh_token_ref`.
 
 1. Run `nektar-gmail-auth -ref=bob`
-2. Add `bob` under `gmail.refresh_tokens`
+2. Merge `bob` into `NEKTAR_GMAIL_REFRESH_TOKENS` in `.env`
 3. Insert another user + `gmail_sync` row pointing at `bob`
 
 Digests and Discord posts are produced per user pipeline activity.
@@ -335,7 +320,7 @@ Useful log filter: search for module names (`fetcher`, `newsletter`, `extractor`
 
 ## 8. Security notes
 
-- Store OAuth secrets and API keys in env vars or a secret manager — not in git
+- Store OAuth secrets and API keys in `.env` / a secret manager — not in git or `configs/config.yaml`
 - Gmail scope is **read-only** (`gmail.readonly`)
 - Discord webhooks are channel credentials; rotate if leaked
 - Prefer TLS-capable Postgres/Redis DSNs outside local Docker

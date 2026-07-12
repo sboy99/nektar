@@ -1,12 +1,26 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
+
+// Secret env keys (NEKTAR_* after prefix + replacer). Bound explicitly so
+// AutomaticEnv + Unmarshal reliably prefer process/.env values over YAML.
+var secretEnvKeys = []string{
+	"gmail.client_id",
+	"gmail.client_secret",
+	"gemini.api_key",
+	"discord.webhook_url",
+	"redis.password",
+	"postgres.dsn",
+}
 
 // Config holds all application configuration.
 type Config struct {
@@ -144,12 +158,26 @@ type RetryConfig struct {
 }
 
 // Load reads configuration from the given path.
+// Secrets are loaded from the process environment (and optional .env files):
+//
+//	.env, then .env.local (overrides), then existing OS env (never overwritten).
+//
+// Map-style secrets (gmail refresh tokens) use NEKTAR_GMAIL_REFRESH_TOKENS JSON.
 func Load(path string) (*Config, error) {
+	if err := loadDotEnv(); err != nil {
+		return nil, err
+	}
+
 	v := viper.New()
 	v.SetConfigFile(path)
 	v.SetEnvPrefix("NEKTAR")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
+	for _, key := range secretEnvKeys {
+		if err := v.BindEnv(key); err != nil {
+			return nil, fmt.Errorf("bind env %s: %w", key, err)
+		}
+	}
 
 	setDefaults(v)
 
@@ -162,7 +190,60 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 
+	if err := applyRefreshTokensFromEnv(&cfg); err != nil {
+		return nil, err
+	}
+
 	return &cfg, nil
+}
+
+func loadDotEnv() error {
+	// Optional path override, e.g. NEKTAR_ENV_FILE=/run/secrets/nektar.env
+	if custom := strings.TrimSpace(os.Getenv("NEKTAR_ENV_FILE")); custom != "" {
+		if err := godotenv.Load(custom); err != nil {
+			return fmt.Errorf("load NEKTAR_ENV_FILE (%s): %w", custom, err)
+		}
+		return nil
+	}
+
+	// .env then .env.local (local wins). Existing OS env is never overwritten.
+	merged := map[string]string{}
+	for _, name := range []string{".env", ".env.local"} {
+		if _, err := os.Stat(name); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("stat %s: %w", name, err)
+		}
+		vals, err := godotenv.Read(name)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", name, err)
+		}
+		for k, v := range vals {
+			merged[k] = v
+		}
+	}
+	for k, v := range merged {
+		if os.Getenv(k) == "" {
+			if err := os.Setenv(k, v); err != nil {
+				return fmt.Errorf("set env %s: %w", k, err)
+			}
+		}
+	}
+	return nil
+}
+
+func applyRefreshTokensFromEnv(cfg *Config) error {
+	raw := strings.TrimSpace(os.Getenv("NEKTAR_GMAIL_REFRESH_TOKENS"))
+	if raw == "" {
+		return nil
+	}
+	var tokens map[string]string
+	if err := json.Unmarshal([]byte(raw), &tokens); err != nil {
+		return fmt.Errorf("parse NEKTAR_GMAIL_REFRESH_TOKENS (want JSON object): %w", err)
+	}
+	cfg.Gmail.RefreshTokens = tokens
+	return nil
 }
 
 func setDefaults(v *viper.Viper) {

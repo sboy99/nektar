@@ -87,10 +87,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Refresh token obtained. Add to configs/config.yaml:")
+	fmt.Println("Refresh token obtained. Add to .env:")
 	fmt.Println()
-	fmt.Printf("gmail:\n  client_id: %q\n  client_secret: %q\n  refresh_tokens:\n    %s: %q\n",
-		*clientID, *clientSecret, *ref, token.RefreshToken)
+	fmt.Printf("NEKTAR_GMAIL_CLIENT_ID=%s\n", *clientID)
+	fmt.Printf("NEKTAR_GMAIL_CLIENT_SECRET=%s\n", *clientSecret)
+	fmt.Printf("NEKTAR_GMAIL_REFRESH_TOKENS={\"%s\":%q}\n", *ref, token.RefreshToken)
 	fmt.Println()
 	fmt.Println("Then seed a user + gmail_sync row with refresh_token_ref matching that key.")
 }
