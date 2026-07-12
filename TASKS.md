@@ -58,7 +58,11 @@ Topic clustering: nearest-neighbor assignment, centroid updates, merge, and `Clu
 
 Digest builder: importance ranking/filtering, file-based prompts, Gemini summarization, markdown digests, and `DigestReady` events.
 
-Remaining work is primarily publishing, scheduling, testing, and deployment.
+## Phase 8 Complete
+
+Discord publisher: markdown/embed builders, webhook client with retry, digest status updates, and publish metrics.
+
+Remaining work is primarily scheduling, testing, and deployment.
 
 ---
 
@@ -403,11 +407,11 @@ prompts/
 
 ## Discord
 
-- [ ] Markdown builder
-- [ ] Embed builder
-- [ ] Webhook client
-- [ ] Retry
-- [ ] Publish metrics
+- [x] Markdown builder
+- [x] Embed builder
+- [x] Webhook client
+- [x] Retry
+- [x] Publish metrics
 
 ## Future
 
@@ -444,7 +448,7 @@ Track:
 - [x] Clusters created
 - [ ] Duplicate articles
 - [x] Digest latency
-- [ ] Publish latency
+- [x] Publish latency
 - [x] LLM latency
 - [x] Token usage
 

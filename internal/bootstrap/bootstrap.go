@@ -221,7 +221,9 @@ func registerHandlers(ctx context.Context, app *App) {
 			Metrics:               app.Metrics,
 		},
 	))
-	_ = app.EventBus.Subscribe(ctx, events.TopicDigestReady, modpublisher.Handle(log, app.Publisher))
+	_ = app.EventBus.Subscribe(ctx, events.TopicDigestReady, modpublisher.Handle(
+		log, app.Storage, app.Publisher, modpublisher.Config{Metrics: app.Metrics},
+	))
 }
 
 func registerSchedulerJobs(app *App) {

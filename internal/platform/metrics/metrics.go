@@ -39,6 +39,10 @@ type Registry struct {
 	DigestsGenerated prometheus.Counter
 	DigestErrors     *prometheus.CounterVec
 	DigestDuration   prometheus.Histogram
+
+	DigestsPublished prometheus.Counter
+	PublishErrors    *prometheus.CounterVec
+	PublishDuration  prometheus.Histogram
 }
 
 // NewRegistry creates and registers application metrics.
@@ -180,6 +184,22 @@ func NewRegistry() *Registry {
 			Help:    "Duration of a digest handler run",
 			Buckets: prometheus.DefBuckets,
 		}),
+		DigestsPublished: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_digests_published_total",
+			Help: "Total number of digests published to external channels",
+		}),
+		PublishErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_publish_errors_total",
+				Help: "Total number of publish pipeline errors",
+			},
+			[]string{"reason"},
+		),
+		PublishDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    "nektar_publish_duration_seconds",
+			Help:    "Duration of a publish handler run",
+			Buckets: prometheus.DefBuckets,
+		}),
 	}
 
 	prometheus.MustRegister(
@@ -208,6 +228,9 @@ func NewRegistry() *Registry {
 		r.DigestsGenerated,
 		r.DigestErrors,
 		r.DigestDuration,
+		r.DigestsPublished,
+		r.PublishErrors,
+		r.PublishDuration,
 	)
 
 	return r
