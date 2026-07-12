@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"encoding/json"
+	"maps"
 	"net/http"
 	"sync"
 	"time"
@@ -20,9 +21,7 @@ type Checker struct {
 // New creates a checker from named checks.
 func New(checks map[string]Check) *Checker {
 	copied := make(map[string]Check, len(checks))
-	for name, check := range checks {
-		copied[name] = check
-	}
+	maps.Copy(copied, checks)
 	return &Checker{checks: copied}
 }
 

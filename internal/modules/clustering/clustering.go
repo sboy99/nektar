@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
@@ -277,7 +278,7 @@ func mergeClusters(
 func bestMergePair(clusters []*domain.Cluster, threshold float64) (i, j int, score float64) {
 	bestI, bestJ := -1, -1
 	best := threshold
-	for a := 0; a < len(clusters); a++ {
+	for a := range clusters {
 		for b := a + 1; b < len(clusters); b++ {
 			sim := cosine(clusters[a].Centroid, clusters[b].Centroid)
 			if sim >= best {
@@ -377,12 +378,7 @@ func findClusterContaining(clusters []*domain.Cluster, articleID string) string 
 }
 
 func containsID(ids []string, id string) bool {
-	for _, x := range ids {
-		if x == id {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ids, id)
 }
 
 func markFailed(ctx context.Context, storage repository.Storage, article *domain.Article) error {

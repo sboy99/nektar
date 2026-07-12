@@ -191,10 +191,7 @@ func (p *Publisher) sendWithRetry(ctx context.Context, content string, embeds []
 			break
 		}
 
-		backoff := baseBackoff * time.Duration(1<<(attempt-1))
-		if re.retryAfter > backoff {
-			backoff = re.retryAfter
-		}
+		backoff := max(re.retryAfter, baseBackoff*time.Duration(1<<(attempt-1)))
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
