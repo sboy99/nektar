@@ -1,6 +1,12 @@
 # Nektar
 
-**Nektar extracts the nectar (signal) from a sea of information (noise).**
+<p align="center">
+  <img src="docs/nektar-banner.png" alt="Nektar — Your daily dose of tech intelligence" width="680" />
+</p>
+
+**Your daily dose of tech intelligence.**
+
+Nektar delivers the most important tech updates straight to your Discord — curated, concise, and AI-powered. It extracts the nectar (signal) from a sea of information (noise).
 
 An event-driven technical intelligence platform built with Go using Hexagonal Architecture (Ports & Adapters).
 
