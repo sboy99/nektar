@@ -28,3 +28,11 @@ func TestSummarizeRejectsEmptyText(t *testing.T) {
 		t.Fatal("expected error for whitespace text")
 	}
 }
+
+func TestEmbedRejectsEmptyText(t *testing.T) {
+	p := &Provider{embedModel: "text-embedding-004", dimensions: 768}
+	_, err := p.Embed(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected error for empty text")
+	}
+}

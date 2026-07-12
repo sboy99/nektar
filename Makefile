@@ -1,7 +1,9 @@
-.PHONY: build run test lint hooks deps infra-up infra-down clean
+.PHONY: build run test test-integration lint hooks deps infra-up infra-down clean
 
 BINARY := bin/nektar
 CONFIG := configs/config.yaml
+POSTGRES_DSN ?= postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
+REDIS_ADDR ?= localhost:6379
 
 build:
 	go build -o $(BINARY) ./cmd/nektar
@@ -11,6 +13,10 @@ run: build
 
 test:
 	go test ./...
+
+test-integration:
+	NEKTAR_POSTGRES_DSN='$(POSTGRES_DSN)' NEKTAR_REDIS_ADDR='$(REDIS_ADDR)' \
+		go test ./internal/adapters/postgres/... ./internal/adapters/redis/... -count=1 -v
 
 lint:
 	gofmt -l . | (! grep .)

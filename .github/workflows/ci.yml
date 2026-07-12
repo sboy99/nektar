@@ -13,6 +13,32 @@ jobs:
   build-and-test:
     name: Build & Test
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: nektar
+          POSTGRES_PASSWORD: nektar
+          POSTGRES_DB: nektar
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nektar"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,6 +62,9 @@ jobs:
         run: go vet ./...
 
       - name: Test
+        env:
+          NEKTAR_POSTGRES_DSN: postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
+          NEKTAR_REDIS_ADDR: localhost:6379
         run: go test ./...
 
       - name: Build

@@ -479,23 +479,25 @@ Track:
 
 ## Unit
 
-- [ ] Modules
-- [ ] Services
-- [ ] Domain
+- [x] Modules
+- [x] Services
+- [x] Domain
 
 ## Integration
 
-- [ ] Redis Streams
-- [ ] PostgreSQL
-- [ ] Gmail adapter
-- [ ] Gemini adapter
-- [ ] Discord adapter
+- [x] Redis Streams
+- [x] PostgreSQL
+- [x] Gmail adapter
+- [x] Gemini adapter
+- [x] Discord adapter
 
 ## End-to-End
 
 ```
 Fetch → Extract → Embed → Cluster → Digest → Publish
 ```
+
+- [x] In-memory E2E pipeline (`internal/test/e2e`)
 
 ---
 
@@ -590,7 +592,7 @@ The MVP is complete when:
 - [ ] Digest is published to Discord
 - [ ] PostgreSQL stores all state
 - [ ] Redis Streams powers the event pipeline
-- [ ] Integration tests pass
+- [x] Integration tests pass
 - [ ] Documentation covers OAuth, setup, deployment, and troubleshooting
 
 ---

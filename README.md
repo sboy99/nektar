@@ -250,15 +250,24 @@ export NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmo
 export NEKTAR_GEMINI_API_KEY=your-key
 ```
 
-### PostgreSQL Integration Tests
+### Integration Tests
 
-Postgres repository tests skip unless a DSN is set:
+Postgres and Redis adapter tests skip unless env vars are set. CI runs them against service containers; locally:
 
 ```bash
 make infra-up
-NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' \
-  go test ./internal/adapters/postgres/... -count=1 -v
+make test-integration
 ```
+
+Or explicitly:
+
+```bash
+NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' \
+NEKTAR_REDIS_ADDR='localhost:6379' \
+  go test ./internal/adapters/postgres/... ./internal/adapters/redis/... -count=1 -v
+```
+
+Unit and in-memory E2E pipeline tests run with plain `make test` / `go test ./...` (no infra required).
 
 ## Endpoints
 
@@ -286,6 +295,7 @@ Structured JSON logs include `correlation_id` across the pipeline. Configure log
 | Phase 8 | Complete | Discord publisher, webhook retry, publish metrics |
 | Phase 9 | Complete | Scheduler jobs (fetch, retry, publish, cleanup, OAuth) |
 | Phase 10 | Complete | Metrics, correlation IDs, retry policy, readiness, graceful shutdown |
+| Phase 11 | Complete | Unit, adapter integration (Postgres/Redis), E2E pipeline |
 
 ## License
 
