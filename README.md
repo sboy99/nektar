@@ -12,6 +12,8 @@ An event-driven technical intelligence platform built with Go using Hexagonal Ar
 
 Full roadmap: [TASKS.md](TASKS.md)
 
+**Install, setup & user guide:** [docs/GUIDE.md](docs/GUIDE.md)
+
 ## Pipeline
 
 ```
