@@ -29,6 +29,8 @@ type Config struct {
 	Digest      DigestConfig      `mapstructure:"digest"`
 	Scheduler   SchedulerConfig   `mapstructure:"scheduler"`
 	Server      ServerConfig      `mapstructure:"server"`
+	Logging     LoggingConfig     `mapstructure:"logging"`
+	Retry       RetryConfig       `mapstructure:"retry"`
 }
 
 // ProviderConfig selects an infrastructure implementation.
@@ -124,7 +126,21 @@ type SchedulerConfig struct {
 
 // ServerConfig configures the HTTP server for metrics/health.
 type ServerConfig struct {
-	Addr string `mapstructure:"addr"`
+	Addr            string        `mapstructure:"addr"`
+	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
+}
+
+// LoggingConfig configures structured logging.
+type LoggingConfig struct {
+	Level string `mapstructure:"level"`
+}
+
+// RetryConfig configures shared retry policies.
+type RetryConfig struct {
+	EventBusMaxAttempts int           `mapstructure:"eventbus_max_attempts"`
+	EventBusBaseBackoff time.Duration `mapstructure:"eventbus_base_backoff"`
+	FetchMaxAttempts    int           `mapstructure:"fetch_max_attempts"`
+	FetchBaseBackoff    time.Duration `mapstructure:"fetch_base_backoff"`
 }
 
 // Load reads configuration from the given path.
@@ -201,4 +217,10 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("scheduler.dlq_replay_limit", 100)
 	v.SetDefault("scheduler.event_retention", "168h")
 	v.SetDefault("server.addr", ":8080")
+	v.SetDefault("server.shutdown_timeout", "10s")
+	v.SetDefault("logging.level", "info")
+	v.SetDefault("retry.eventbus_max_attempts", 3)
+	v.SetDefault("retry.eventbus_base_backoff", "100ms")
+	v.SetDefault("retry.fetch_max_attempts", 3)
+	v.SetDefault("retry.fetch_base_backoff", "500ms")
 }

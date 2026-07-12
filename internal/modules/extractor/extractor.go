@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
@@ -44,9 +45,10 @@ func Handle(
 			logger.Error("extractor: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, detected.CorrelationID)
 
 		start := time.Now()
-		err := process(ctx, logger, storage, bus, cfg, detected)
+		err := process(ctx, log, storage, bus, cfg, detected)
 		if cfg.Metrics != nil {
 			cfg.Metrics.ExtractionDuration.Observe(time.Since(start).Seconds())
 		}
@@ -88,6 +90,9 @@ func process(
 	}
 	if len(existing) > 0 {
 		logger.Debug("extractor: articles already exist", "email_id", email.ID, "count", len(existing))
+		if cfg.Metrics != nil {
+			cfg.Metrics.ArticlesDuplicated.Add(float64(len(existing)))
+		}
 		if email.Stage != domain.StageExtracted {
 			email.Stage = domain.StageExtracted
 			if saveErr := storage.Emails().Save(ctx, email); saveErr != nil {
@@ -138,9 +143,10 @@ func process(
 		}
 
 		if err := bus.Publish(ctx, events.ArticleCreated{
-			UserID:    article.UserID,
-			ArticleID: article.ID,
-			EmailID:   article.EmailID,
+			UserID:        article.UserID,
+			ArticleID:     article.ID,
+			EmailID:       article.EmailID,
+			CorrelationID: detected.CorrelationID,
 		}); err != nil {
 			_ = markFailed(ctx, storage, email)
 			return fmt.Errorf("extractor: publish ArticleCreated: %w", err)
@@ -199,7 +205,11 @@ func parseEmailDetected(event porteventbus.Event) (events.EmailDetected, bool) {
 		if emailID == "" {
 			return events.EmailDetected{}, false
 		}
-		return events.EmailDetected{UserID: userID, EmailID: emailID}, true
+		return events.EmailDetected{
+			UserID:        userID,
+			EmailID:       emailID,
+			CorrelationID: events.CorrelationIDFromMap(p),
+		}, true
 	default:
 		return events.EmailDetected{}, false
 	}

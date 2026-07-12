@@ -42,6 +42,16 @@ func (c *Cache) PurgeExpired(_ context.Context) (int, error) {
 	return 0, nil
 }
 
+// Ping verifies the Redis connection is usable.
+func (c *Cache) Ping(ctx context.Context) error {
+	return c.client.Ping(ctx).Err()
+}
+
+// Close closes the underlying Redis client.
+func (c *Cache) Close() error {
+	return c.client.Close()
+}
+
 // NewClient creates a Redis client from address and credentials.
 func NewClient(addr, password string, db int) *goredis.Client {
 	return goredis.NewClient(&goredis.Options{

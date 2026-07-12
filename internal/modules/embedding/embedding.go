@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/uuid"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	portcache "github.com/sboy99/nektar/internal/ports/cache"
 	portembedding "github.com/sboy99/nektar/internal/ports/embedding"
@@ -60,9 +61,10 @@ func Handle(
 			logger.Error("embedding: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, created.CorrelationID)
 
 		start := time.Now()
-		err := process(ctx, logger, storage, bus, embedder, cache, cfg, created)
+		err := process(ctx, log, storage, bus, embedder, cache, cfg, created)
 		if cfg.Metrics != nil {
 			cfg.Metrics.EmbeddingDuration.Observe(time.Since(start).Seconds())
 		}
@@ -192,9 +194,10 @@ func process(
 	}
 
 	if err := bus.Publish(ctx, events.EmbeddingCreated{
-		UserID:      article.UserID,
-		EmbeddingID: embedding.ID,
-		ArticleID:   article.ID,
+		UserID:        article.UserID,
+		EmbeddingID:   embedding.ID,
+		ArticleID:     article.ID,
+		CorrelationID: created.CorrelationID,
 	}); err != nil {
 		_ = markFailed(ctx, storage, article)
 		return fmt.Errorf("embedding: publish EmbeddingCreated: %w", err)
@@ -294,7 +297,12 @@ func parseArticleCreated(event porteventbus.Event) (events.ArticleCreated, bool)
 		if articleID == "" {
 			return events.ArticleCreated{}, false
 		}
-		return events.ArticleCreated{UserID: userID, ArticleID: articleID, EmailID: emailID}, true
+		return events.ArticleCreated{
+			UserID:        userID,
+			ArticleID:     articleID,
+			EmailID:       emailID,
+			CorrelationID: events.CorrelationIDFromMap(p),
+		}, true
 	default:
 		return events.ArticleCreated{}, false
 	}

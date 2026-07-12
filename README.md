@@ -256,10 +256,13 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 
 ## Endpoints
 
-| Path       | Description          |
-|------------|----------------------|
-| `/health`  | Health check         |
-| `/metrics` | Prometheus metrics   |
+| Path       | Description                                      |
+|------------|--------------------------------------------------|
+| `/health`  | Liveness probe (process up)                      |
+| `/ready`   | Readiness probe (Postgres + Redis/cache ping)    |
+| `/metrics` | Prometheus metrics                               |
+
+Structured JSON logs include `correlation_id` across the pipeline. Configure log level via `logging.level` (`debug|info|warn|error`).
 
 ## Status
 
@@ -276,6 +279,7 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 7 | Complete | Digest builder, prompts, DigestReady |
 | Phase 8 | Complete | Discord publisher, webhook retry, publish metrics |
 | Phase 9 | Complete | Scheduler jobs (fetch, retry, publish, cleanup, OAuth) |
+| Phase 10 | Complete | Metrics, correlation IDs, retry policy, readiness, graceful shutdown |
 
 ## License
 

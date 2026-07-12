@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	portpublisher "github.com/sboy99/nektar/internal/ports/publisher"
@@ -32,9 +33,10 @@ func Handle(
 			logger.Error("publisher: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, ready.CorrelationID)
 
 		start := time.Now()
-		err := PublishDigest(ctx, logger, storage, pub, cfg, ready.DigestID)
+		err := PublishDigest(ctx, log, storage, pub, cfg, ready.DigestID)
 		if cfg.Metrics != nil {
 			cfg.Metrics.PublishDuration.Observe(time.Since(start).Seconds())
 		}
@@ -128,7 +130,11 @@ func parseDigestReady(event porteventbus.Event) (events.DigestReady, bool) {
 		if userID == "" && digestID == "" {
 			return events.DigestReady{}, false
 		}
-		return events.DigestReady{UserID: userID, DigestID: digestID}, true
+		return events.DigestReady{
+			UserID:        userID,
+			DigestID:      digestID,
+			CorrelationID: events.CorrelationIDFromMap(p),
+		}, true
 	default:
 		return events.DigestReady{}, false
 	}

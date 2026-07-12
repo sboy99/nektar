@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
@@ -45,9 +46,10 @@ func Handle(
 			logger.Error("clustering: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, created.CorrelationID)
 
 		start := time.Now()
-		err := process(ctx, logger, storage, bus, cfg, created)
+		err := process(ctx, log, storage, bus, cfg, created)
 		if cfg.Metrics != nil {
 			cfg.Metrics.ClusteringDuration.Observe(time.Since(start).Seconds())
 		}
@@ -134,8 +136,9 @@ func process(
 	}
 
 	if err := bus.Publish(ctx, events.ClusterUpdated{
-		UserID:    article.UserID,
-		ClusterID: clusterID,
+		UserID:        article.UserID,
+		ClusterID:     clusterID,
+		CorrelationID: created.CorrelationID,
 	}); err != nil {
 		_ = markFailed(ctx, storage, article)
 		return fmt.Errorf("clustering: publish ClusterUpdated: %w", err)
@@ -402,9 +405,10 @@ func parseEmbeddingCreated(event porteventbus.Event) (events.EmbeddingCreated, b
 			return events.EmbeddingCreated{}, false
 		}
 		return events.EmbeddingCreated{
-			UserID:      userID,
-			EmbeddingID: embeddingID,
-			ArticleID:   articleID,
+			UserID:        userID,
+			EmbeddingID:   embeddingID,
+			ArticleID:     articleID,
+			CorrelationID: events.CorrelationIDFromMap(p),
 		}, true
 	default:
 		return events.EmbeddingCreated{}, false

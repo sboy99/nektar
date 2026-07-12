@@ -82,3 +82,13 @@ scheduler:
 
 server:
   addr: ":8080"
+  shutdown_timeout: 10s
+
+logging:
+  level: info
+
+retry:
+  eventbus_max_attempts: 3
+  eventbus_base_backoff: 100ms
+  fetch_max_attempts: 3
+  fetch_base_backoff: 500ms

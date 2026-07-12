@@ -66,7 +66,11 @@ Discord publisher: markdown/embed builders, webhook client with retry, digest st
 
 Scheduler jobs: fetch Gmail, DLQ replay, unpublished digest catch-up, cache purge, event/email retention cleanup, and OAuth refresh probes — each with configurable intervals.
 
-Remaining work is primarily observability polish, testing, and deployment.
+## Phase 10 Complete
+
+Prometheus metrics (including duplicate articles and event-bus counters), correlation IDs across pipeline events/logs, configurable structured logging, shared retry policy, `/ready` probe, and ordered graceful shutdown.
+
+Remaining work is primarily testing and deployment.
 
 ---
 
@@ -450,7 +454,7 @@ Track:
 - [x] Articles extracted
 - [x] Embeddings generated
 - [x] Clusters created
-- [ ] Duplicate articles
+- [x] Duplicate articles
 - [x] Digest latency
 - [x] Publish latency
 - [x] LLM latency
@@ -458,16 +462,16 @@ Track:
 
 ## Logging
 
-- [ ] Correlation IDs
-- [ ] Pipeline tracing
-- [ ] Structured logging
+- [x] Correlation IDs
+- [x] Pipeline tracing
+- [x] Structured logging
 
 ## Reliability
 
-- [ ] Retry policy
+- [x] Retry policy
 - [x] DLQ replay
-- [ ] Readiness probe
-- [ ] Graceful shutdown
+- [x] Readiness probe
+- [x] Graceful shutdown
 
 ---
 

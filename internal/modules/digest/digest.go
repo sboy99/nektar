@@ -10,6 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
@@ -62,9 +63,10 @@ func Handle(
 			logger.Error("digest: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, updated.CorrelationID)
 
 		start := time.Now()
-		err := process(ctx, logger, storage, bus, summarizer, cfg, *p, updated)
+		err := process(ctx, log, storage, bus, summarizer, cfg, *p, updated)
 		if cfg.Metrics != nil {
 			cfg.Metrics.DigestDuration.Observe(time.Since(start).Seconds())
 		}
@@ -298,8 +300,9 @@ func process(
 			cfg.Metrics.DigestsGenerated.Inc()
 		}
 		if err := bus.Publish(ctx, events.DigestReady{
-			UserID:   dig.UserID,
-			DigestID: dig.ID,
+			UserID:        dig.UserID,
+			DigestID:      dig.ID,
+			CorrelationID: updated.CorrelationID,
 		}); err != nil {
 			return fmt.Errorf("digest: publish DigestReady: %w", err)
 		}
@@ -423,7 +426,11 @@ func parseClusterUpdated(event porteventbus.Event) (events.ClusterUpdated, bool)
 		if userID == "" && clusterID == "" {
 			return events.ClusterUpdated{}, false
 		}
-		return events.ClusterUpdated{UserID: userID, ClusterID: clusterID}, true
+		return events.ClusterUpdated{
+			UserID:        userID,
+			ClusterID:     clusterID,
+			CorrelationID: events.CorrelationIDFromMap(p),
+		}, true
 	default:
 		return events.ClusterUpdated{}, false
 	}

@@ -9,17 +9,14 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/sboy99/nektar/internal/platform/logger"
+	"github.com/sboy99/nektar/internal/platform/metrics"
+	"github.com/sboy99/nektar/internal/platform/retry"
 	portemail "github.com/sboy99/nektar/internal/ports/email"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
-	"github.com/sboy99/nektar/internal/platform/metrics"
 	"github.com/sboy99/nektar/shared/domain"
 	"github.com/sboy99/nektar/shared/events"
-)
-
-const (
-	maxAttempts = 3
-	baseBackoff = 500 * time.Millisecond
 )
 
 // Config holds fetcher runtime dependencies beyond ports.
@@ -27,6 +24,7 @@ type Config struct {
 	RefreshTokens map[string]string
 	DefaultQuery  string
 	Metrics       *metrics.Registry
+	Retry         retry.Policy
 }
 
 // Handle returns a scheduler job function that fetches emails for all users.
@@ -73,7 +71,7 @@ func Handle(
 
 func syncUser(
 	ctx context.Context,
-	logger *slog.Logger,
+	log *slog.Logger,
 	email portemail.Provider,
 	storage repository.Storage,
 	bus porteventbus.EventBus,
@@ -95,7 +93,7 @@ func syncUser(
 		query = cfg.DefaultQuery
 	}
 
-	result, err := fetchWithRetry(ctx, email, portemail.FetchParams{
+	result, err := fetchWithRetry(ctx, cfg.Retry, email, portemail.FetchParams{
 		UserID:       sync.UserID,
 		HistoryID:    sync.HistoryID,
 		Query:        query,
@@ -108,7 +106,7 @@ func syncUser(
 
 	for i := range result.Emails {
 		raw := &result.Emails[i]
-		if err := persistEmail(ctx, logger, storage, bus, cfg, raw); err != nil {
+		if err := persistEmail(ctx, log, storage, bus, cfg, raw); err != nil {
 			incFetchError(cfg.Metrics, "persist")
 			return err
 		}
@@ -126,7 +124,7 @@ func syncUser(
 		return fmt.Errorf("save gmail sync: %w", err)
 	}
 
-	logger.Info("fetcher: user sync complete",
+	log.Info("fetcher: user sync complete",
 		"user_id", sync.UserID,
 		"fetched", len(result.Emails),
 		"history_id", result.NewHistoryID,
@@ -136,7 +134,7 @@ func syncUser(
 
 func persistEmail(
 	ctx context.Context,
-	logger *slog.Logger,
+	log *slog.Logger,
 	storage repository.Storage,
 	bus porteventbus.EventBus,
 	cfg Config,
@@ -164,12 +162,16 @@ func persistEmail(
 	email.ListID = raw.ListID
 	email.ListUnsubscribe = raw.ListUnsubscribe
 
+	corrID := uuid.NewString()
+	log = logger.WithCorrelation(log, corrID)
+
 	if err := storage.Emails().Save(ctx, email); err != nil {
 		return fmt.Errorf("save email: %w", err)
 	}
 	if err := bus.Publish(ctx, events.EmailFetched{
-		UserID:  email.UserID,
-		EmailID: email.ID,
+		UserID:        email.UserID,
+		EmailID:       email.ID,
+		CorrelationID: corrID,
 	}); err != nil {
 		return fmt.Errorf("publish EmailFetched: %w", err)
 	}
@@ -177,29 +179,21 @@ func persistEmail(
 	if cfg.Metrics != nil {
 		cfg.Metrics.EmailsFetched.Inc()
 	}
-	logger.Debug("fetcher: stored email", "email_id", email.ID, "gmail_message_id", email.GmailMessageID)
+	log.Debug("fetcher: stored email", "email_id", email.ID, "gmail_message_id", email.GmailMessageID)
 	return nil
 }
 
-func fetchWithRetry(ctx context.Context, provider portemail.Provider, params portemail.FetchParams) (*portemail.FetchResult, error) {
-	var lastErr error
-	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		result, err := provider.Fetch(ctx, params)
-		if err == nil {
-			return result, nil
-		}
-		lastErr = err
-		if attempt == maxAttempts {
-			break
-		}
-		backoff := baseBackoff * time.Duration(1<<(attempt-1))
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		case <-time.After(backoff):
-		}
+func fetchWithRetry(ctx context.Context, policy retry.Policy, provider portemail.Provider, params portemail.FetchParams) (*portemail.FetchResult, error) {
+	var result *portemail.FetchResult
+	err := retry.Do(ctx, policy, func() error {
+		var err error
+		result, err = provider.Fetch(ctx, params)
+		return err
+	})
+	if err != nil {
+		return nil, err
 	}
-	return nil, lastErr
+	return result, nil
 }
 
 func incFetchError(m *metrics.Registry, reason string) {

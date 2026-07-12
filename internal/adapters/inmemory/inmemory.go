@@ -2,13 +2,17 @@ package inmemory
 
 import (
 	"context"
+	"log/slog"
 	"sync"
 	"time"
 
+	"github.com/sboy99/nektar/internal/platform/logger"
+	"github.com/sboy99/nektar/internal/platform/metrics"
 	"github.com/sboy99/nektar/internal/ports/cache"
 	"github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
 	"github.com/sboy99/nektar/shared/domain"
+	"github.com/sboy99/nektar/shared/events"
 )
 
 // Bus is a synchronous in-memory event bus for tests and local dev.
@@ -16,13 +20,33 @@ type Bus struct {
 	mu       sync.RWMutex
 	handlers map[string][]eventbus.Handler
 	closed   bool
+	metrics  *metrics.Registry
+	logger   *slog.Logger
+}
+
+// BusOption configures optional Bus behavior.
+type BusOption func(*Bus)
+
+// WithMetrics attaches a metrics registry to the bus.
+func WithMetrics(m *metrics.Registry) BusOption {
+	return func(b *Bus) { b.metrics = m }
+}
+
+// WithLogger attaches a logger to the bus.
+func WithLogger(l *slog.Logger) BusOption {
+	return func(b *Bus) { b.logger = l }
 }
 
 // NewBus creates an in-memory event bus.
-func NewBus() *Bus {
-	return &Bus{
+func NewBus(opts ...BusOption) *Bus {
+	b := &Bus{
 		handlers: make(map[string][]eventbus.Handler),
+		logger:   slog.Default(),
 	}
+	for _, opt := range opts {
+		opt(b)
+	}
+	return b
 }
 
 // Publish dispatches the event to all subscribers for its topic synchronously.
@@ -34,10 +58,24 @@ func (b *Bus) Publish(ctx context.Context, event eventbus.Event) error {
 		return context.Canceled
 	}
 
+	if b.metrics != nil {
+		b.metrics.EventsPublished.WithLabelValues(event.Name()).Inc()
+	}
+
+	corrID := events.CorrelationIDFromPayload(event.Payload())
+	log := logger.WithCorrelation(b.logger, corrID)
+
 	for _, h := range b.handlers[event.Name()] {
 		if err := h(ctx, event); err != nil {
+			if b.metrics != nil {
+				b.metrics.HandlerErrors.WithLabelValues(event.Name()).Inc()
+			}
+			log.Warn("handler failed", "topic", event.Name(), "error", err)
 			return err
 		}
+	}
+	if b.metrics != nil {
+		b.metrics.EventsHandled.WithLabelValues(event.Name()).Inc()
 	}
 	return nil
 }
@@ -69,6 +107,7 @@ func (b *Bus) Close() error {
 	b.closed = true
 	return nil
 }
+
 
 // --- Cache ---
 
@@ -137,6 +176,9 @@ func (c *Cache) PurgeExpired(_ context.Context) (int, error) {
 	return n, nil
 }
 
+func (c *Cache) Ping(_ context.Context) error { return nil }
+func (c *Cache) Close() error                 { return nil }
+
 // --- Storage ---
 
 // Storage is an in-memory repository implementation.
@@ -173,6 +215,7 @@ func (s *Storage) Clusters() repository.ClusterRepository       { return &cluste
 func (s *Storage) Digests() repository.DigestRepository         { return &digestRepo{s} }
 func (s *Storage) Embeddings() repository.EmbeddingRepository   { return &embeddingRepo{s} }
 func (s *Storage) LLMRequests() repository.LLMRequestRepository { return &llmRequestRepo{s} }
+func (s *Storage) Ping(_ context.Context) error                  { return nil }
 func (s *Storage) Close() error                                 { return nil }
 
 type userRepo struct{ s *Storage }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 
+	plog "github.com/sboy99/nektar/internal/platform/logger"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 	"github.com/sboy99/nektar/internal/ports/repository"
@@ -40,11 +41,12 @@ func Handle(
 			logger.Error("newsletter: unexpected event payload", "event", event.Name())
 			return nil
 		}
+		log := plog.WithCorrelation(logger, fetched.CorrelationID)
 
 		email, err := storage.Emails().FindByID(ctx, fetched.EmailID)
 		if err != nil {
 			if errors.Is(err, repository.ErrNotFound) {
-				logger.Warn("newsletter: email not found", "email_id", fetched.EmailID)
+				log.Warn("newsletter: email not found", "email_id", fetched.EmailID)
 				return nil
 			}
 			return fmt.Errorf("newsletter: find email: %w", err)
@@ -52,7 +54,7 @@ func Handle(
 
 		// Idempotent: already classified.
 		if email.Stage == domain.StageDetected || email.Stage == domain.StageRejected {
-			logger.Debug("newsletter: already processed", "email_id", email.ID, "stage", email.Stage)
+			log.Debug("newsletter: already processed", "email_id", email.ID, "stage", email.Stage)
 			return nil
 		}
 
@@ -83,12 +85,13 @@ func Handle(
 				cfg.Metrics.NewslettersDetected.Inc()
 			}
 			if err := bus.Publish(ctx, events.EmailDetected{
-				UserID:  email.UserID,
-				EmailID: email.ID,
+				UserID:        email.UserID,
+				EmailID:       email.ID,
+				CorrelationID: fetched.CorrelationID,
 			}); err != nil {
 				return fmt.Errorf("newsletter: publish EmailDetected: %w", err)
 			}
-			logger.Info("newsletter: detected",
+			log.Info("newsletter: detected",
 				"email_id", email.ID,
 				"score", result.Score,
 				"reason", result.Reason,
@@ -99,7 +102,7 @@ func Handle(
 		if cfg.Metrics != nil {
 			cfg.Metrics.EmailsRejected.Inc()
 		}
-		logger.Info("newsletter: rejected",
+		log.Info("newsletter: rejected",
 			"email_id", email.ID,
 			"score", result.Score,
 			"reason", result.Reason,
@@ -121,7 +124,11 @@ func parseEmailFetched(event porteventbus.Event) (events.EmailFetched, bool) {
 		if emailID == "" {
 			return events.EmailFetched{}, false
 		}
-		return events.EmailFetched{UserID: userID, EmailID: emailID}, true
+		return events.EmailFetched{
+			UserID:        userID,
+			EmailID:       emailID,
+			CorrelationID: events.CorrelationIDFromMap(p),
+		}, true
 	default:
 		return events.EmailFetched{}, false
 	}

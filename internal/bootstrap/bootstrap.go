@@ -22,7 +22,9 @@ import (
 	"github.com/sboy99/nektar/internal/modules/newsletter"
 	modpublisher "github.com/sboy99/nektar/internal/modules/publisher"
 	"github.com/sboy99/nektar/internal/platform/config"
+	"github.com/sboy99/nektar/internal/platform/health"
 	"github.com/sboy99/nektar/internal/platform/metrics"
+	"github.com/sboy99/nektar/internal/platform/retry"
 	"github.com/sboy99/nektar/internal/platform/scheduler"
 	portcache "github.com/sboy99/nektar/internal/ports/cache"
 	portemail "github.com/sboy99/nektar/internal/ports/email"
@@ -65,7 +67,7 @@ func Build(ctx context.Context, cfg *config.Config, logger *slog.Logger) (*App, 
 		return nil, fmt.Errorf("build storage: %w", err)
 	}
 
-	app.EventBus, err = buildEventBus(cfg, logger)
+	app.EventBus, err = buildEventBus(cfg, logger, app.Metrics)
 	if err != nil {
 		return nil, fmt.Errorf("build event bus: %w", err)
 	}
@@ -109,7 +111,11 @@ func buildStorage(ctx context.Context, cfg *config.Config) (repository.Storage, 
 	}
 }
 
-func buildEventBus(cfg *config.Config, logger *slog.Logger) (porteventbus.EventBus, error) {
+func buildEventBus(cfg *config.Config, logger *slog.Logger, m *metrics.Registry) (porteventbus.EventBus, error) {
+	policy := retry.Policy{
+		MaxAttempts: cfg.Retry.EventBusMaxAttempts,
+		BaseBackoff: cfg.Retry.EventBusBaseBackoff,
+	}
 	switch cfg.EventBus.Provider {
 	case "redis":
 		client := redisadapter.NewClient(cfg.Redis.Addr, cfg.Redis.Password, cfg.Redis.DB)
@@ -119,9 +125,11 @@ func buildEventBus(cfg *config.Config, logger *slog.Logger) (porteventbus.EventB
 			GroupName:    cfg.Redis.GroupName,
 			ConsumerName: cfg.Redis.ConsumerName,
 			Logger:       logger,
+			Metrics:      m,
+			Retry:        policy,
 		}), nil
 	case "inmemory":
-		return inmemory.NewBus(), nil
+		return inmemory.NewBus(inmemory.WithMetrics(m), inmemory.WithLogger(logger)), nil
 	default:
 		return nil, fmt.Errorf("unknown eventbus provider: %s", cfg.EventBus.Provider)
 	}
@@ -235,6 +243,10 @@ func registerSchedulerJobs(app *App) {
 			RefreshTokens: app.Config.Gmail.RefreshTokens,
 			DefaultQuery:  app.Config.Gmail.DefaultQuery,
 			Metrics:       app.Metrics,
+			Retry: retry.Policy{
+				MaxAttempts: app.Config.Retry.FetchMaxAttempts,
+				BaseBackoff: app.Config.Retry.FetchBaseBackoff,
+			},
 		}),
 	})
 	app.Scheduler.Register(scheduler.Job{
@@ -281,6 +293,12 @@ func (a *App) Run(ctx context.Context) error {
 		_, _ = w.Write([]byte("ok"))
 	})
 
+	ready := health.New(map[string]health.Check{
+		"storage": a.Storage.Ping,
+		"cache":   a.Cache.Ping,
+	})
+	mux.HandleFunc("/ready", ready.Handler())
+
 	server := &http.Server{
 		Addr:    a.Config.Server.Addr,
 		Handler: mux,
@@ -296,23 +314,61 @@ func (a *App) Run(ctx context.Context) error {
 	a.Scheduler.Start(ctx)
 
 	<-ctx.Done()
+	a.Logger.Info("shutdown started")
 
+	a.Logger.Info("stopping scheduler")
 	a.Scheduler.Stop()
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	timeout := a.Config.Server.ShutdownTimeout
+	if timeout <= 0 {
+		timeout = 10 * time.Second
+	}
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
-	_ = server.Shutdown(shutdownCtx)
 
-	return a.Close()
+	a.Logger.Info("closing event bus")
+	if a.EventBus != nil {
+		if err := a.EventBus.Close(); err != nil {
+			a.Logger.Error("event bus close failed", "error", err)
+		}
+		a.EventBus = nil
+	}
+
+	a.Logger.Info("shutting down http server")
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		a.Logger.Error("http server shutdown failed", "error", err)
+	}
+
+	a.Logger.Info("closing remaining resources")
+	if err := a.Close(); err != nil {
+		a.Logger.Error("close failed", "error", err)
+		return err
+	}
+
+	a.Logger.Info("shutdown complete")
+	return nil
 }
 
 // Close releases all resources.
 func (a *App) Close() error {
+	var firstErr error
 	if a.EventBus != nil {
-		_ = a.EventBus.Close()
+		if err := a.EventBus.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		a.EventBus = nil
+	}
+	if a.Cache != nil {
+		if err := a.Cache.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		a.Cache = nil
 	}
 	if a.Storage != nil {
-		_ = a.Storage.Close()
+		if err := a.Storage.Close(); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		a.Storage = nil
 	}
-	return nil
+	return firstErr
 }

@@ -11,4 +11,6 @@ type Cache interface {
 	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 	Delete(ctx context.Context, key string) error
 	PurgeExpired(ctx context.Context) (int, error)
+	Ping(ctx context.Context) error
+	Close() error
 }

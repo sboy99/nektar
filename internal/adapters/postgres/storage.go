@@ -45,6 +45,11 @@ func (s *Storage) Close() error {
 	return nil
 }
 
+// Ping verifies the PostgreSQL connection is usable.
+func (s *Storage) Ping(ctx context.Context) error {
+	return s.pool.Ping(ctx)
+}
+
 func mapNotFound(err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		return repository.ErrNotFound

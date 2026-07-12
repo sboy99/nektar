@@ -20,9 +20,10 @@ type Registry struct {
 	NewslettersDetected prometheus.Counter
 	EmailsRejected      prometheus.Counter
 
-	ArticlesExtracted  prometheus.Counter
-	ExtractionErrors   *prometheus.CounterVec
-	ExtractionDuration prometheus.Histogram
+	ArticlesExtracted   prometheus.Counter
+	ArticlesDuplicated  prometheus.Counter
+	ExtractionErrors    *prometheus.CounterVec
+	ExtractionDuration  prometheus.Histogram
 
 	EmbeddingsGenerated prometheus.Counter
 	EmbeddingErrors     *prometheus.CounterVec
@@ -100,6 +101,10 @@ func NewRegistry() *Registry {
 		ArticlesExtracted: prometheus.NewCounter(prometheus.CounterOpts{
 			Name: "nektar_articles_extracted_total",
 			Help: "Total number of articles extracted from newsletters",
+		}),
+		ArticlesDuplicated: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_articles_duplicated_total",
+			Help: "Total number of article extractions skipped as duplicates",
 		}),
 		ExtractionErrors: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -213,6 +218,7 @@ func NewRegistry() *Registry {
 		r.NewslettersDetected,
 		r.EmailsRejected,
 		r.ArticlesExtracted,
+		r.ArticlesDuplicated,
 		r.ExtractionErrors,
 		r.ExtractionDuration,
 		r.EmbeddingsGenerated,

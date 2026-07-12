@@ -9,13 +9,16 @@ import (
 	"time"
 
 	goredis "github.com/redis/go-redis/v9"
+	"github.com/sboy99/nektar/internal/platform/logger"
+	"github.com/sboy99/nektar/internal/platform/metrics"
+	"github.com/sboy99/nektar/internal/platform/retry"
 	"github.com/sboy99/nektar/internal/ports/eventbus"
+	"github.com/sboy99/nektar/shared/events"
 )
 
 const (
 	fieldEventName = "event_name"
 	fieldPayload   = "payload"
-	maxRetries     = 3
 )
 
 // Bus implements EventBus using Redis Streams with consumer groups.
@@ -25,6 +28,8 @@ type Bus struct {
 	groupName    string
 	consumerName string
 	logger       *slog.Logger
+	metrics      *metrics.Registry
+	retry        retry.Policy
 
 	mu       sync.Mutex
 	handlers map[string][]eventbus.Handler
@@ -39,6 +44,8 @@ type BusConfig struct {
 	GroupName    string
 	ConsumerName string
 	Logger       *slog.Logger
+	Metrics      *metrics.Registry
+	Retry        retry.Policy
 }
 
 // NewBus creates a Redis Streams event bus.
@@ -52,6 +59,8 @@ func NewBus(cfg BusConfig) *Bus {
 		groupName:    cfg.GroupName,
 		consumerName: cfg.ConsumerName,
 		logger:       cfg.Logger,
+		metrics:      cfg.Metrics,
+		retry:        cfg.Retry,
 		handlers:     make(map[string][]eventbus.Handler),
 	}
 }
@@ -80,6 +89,9 @@ func (b *Bus) Publish(ctx context.Context, event eventbus.Event) error {
 	}).Result()
 	if err != nil {
 		return fmt.Errorf("xadd: %w", err)
+	}
+	if b.metrics != nil {
+		b.metrics.EventsPublished.WithLabelValues(event.Name()).Inc()
 	}
 	return nil
 }
@@ -186,38 +198,45 @@ func (b *Bus) processMessage(ctx context.Context, topic string, msg goredis.XMes
 	_ = json.Unmarshal([]byte(payloadStr), &payload)
 
 	event := &redisEvent{name: eventName, payload: payload}
+	corrID := events.CorrelationIDFromPayload(payload)
+	log := logger.WithCorrelation(b.logger, corrID)
 
 	var lastErr error
-	for attempt := 0; attempt < maxRetries; attempt++ {
+	err := retry.Do(ctx, b.retry, func() error {
+		lastErr = nil
 		for _, h := range handlers {
 			if err := h(ctx, event); err != nil {
 				lastErr = err
-				b.logger.Warn("handler failed",
+				log.Warn("handler failed",
 					"topic", topic,
 					"event", eventName,
-					"attempt", attempt+1,
 					"error", err,
 				)
-				break
+				return err
 			}
 		}
-		if lastErr == nil {
-			break
-		}
-		time.Sleep(time.Duration(attempt+1) * 100 * time.Millisecond)
+		return nil
+	})
+	if err != nil {
+		lastErr = err
 	}
 
 	stream := b.streamKey(topic)
 	if lastErr != nil {
-		b.moveToDLQ(ctx, topic, msg, lastErr)
+		if b.metrics != nil {
+			b.metrics.HandlerErrors.WithLabelValues(topic).Inc()
+		}
+		b.moveToDLQ(ctx, topic, msg, lastErr, log)
+	} else if b.metrics != nil {
+		b.metrics.EventsHandled.WithLabelValues(topic).Inc()
 	}
 
 	if err := b.client.XAck(ctx, stream, b.groupName, msg.ID).Err(); err != nil {
-		b.logger.Error("xack failed", "stream", stream, "id", msg.ID, "error", err)
+		log.Error("xack failed", "stream", stream, "id", msg.ID, "error", err)
 	}
 }
 
-func (b *Bus) moveToDLQ(ctx context.Context, topic string, msg goredis.XMessage, handlerErr error) {
+func (b *Bus) moveToDLQ(ctx context.Context, topic string, msg goredis.XMessage, handlerErr error, log *slog.Logger) {
 	_, err := b.client.XAdd(ctx, &goredis.XAddArgs{
 		Stream: b.dlqKey(topic),
 		Values: map[string]any{
@@ -228,7 +247,7 @@ func (b *Bus) moveToDLQ(ctx context.Context, topic string, msg goredis.XMessage,
 		},
 	}).Result()
 	if err != nil {
-		b.logger.Error("failed to move message to dlq", "topic", topic, "error", err)
+		log.Error("failed to move message to dlq", "topic", topic, "error", err)
 	}
 }
 
@@ -308,5 +327,5 @@ type redisEvent struct {
 	payload any
 }
 
-func (e *redisEvent) Name() string  { return e.name }
-func (e *redisEvent) Payload() any  { return e.payload }
+func (e *redisEvent) Name() string { return e.name }
+func (e *redisEvent) Payload() any { return e.payload }
