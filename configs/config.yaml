@@ -41,6 +41,11 @@ gemini:
 discord:
   webhook_url: ""
 
+newsletter:
+  score_threshold: 0.5
+  allowlist: []
+  denylist: []
+
 scheduler:
   fetch_interval: 15m
 

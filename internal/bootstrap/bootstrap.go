@@ -13,38 +13,39 @@ import (
 	"github.com/sboy99/nektar/internal/adapters/inmemory"
 	"github.com/sboy99/nektar/internal/adapters/postgres"
 	redisadapter "github.com/sboy99/nektar/internal/adapters/redis"
-	portcache "github.com/sboy99/nektar/internal/ports/cache"
-	portemail "github.com/sboy99/nektar/internal/ports/email"
-	portembedding "github.com/sboy99/nektar/internal/ports/embedding"
-	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
-	portpublisher "github.com/sboy99/nektar/internal/ports/publisher"
-	portsummary "github.com/sboy99/nektar/internal/ports/summary"
-	"github.com/sboy99/nektar/internal/ports/repository"
 	"github.com/sboy99/nektar/internal/modules/clustering"
 	"github.com/sboy99/nektar/internal/modules/digest"
 	"github.com/sboy99/nektar/internal/modules/embedding"
 	"github.com/sboy99/nektar/internal/modules/extractor"
 	"github.com/sboy99/nektar/internal/modules/fetcher"
+	"github.com/sboy99/nektar/internal/modules/newsletter"
 	modpublisher "github.com/sboy99/nektar/internal/modules/publisher"
 	"github.com/sboy99/nektar/internal/platform/config"
 	"github.com/sboy99/nektar/internal/platform/metrics"
 	"github.com/sboy99/nektar/internal/platform/scheduler"
+	portcache "github.com/sboy99/nektar/internal/ports/cache"
+	portemail "github.com/sboy99/nektar/internal/ports/email"
+	portembedding "github.com/sboy99/nektar/internal/ports/embedding"
+	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
+	portpublisher "github.com/sboy99/nektar/internal/ports/publisher"
+	"github.com/sboy99/nektar/internal/ports/repository"
+	portsummary "github.com/sboy99/nektar/internal/ports/summary"
 	"github.com/sboy99/nektar/shared/events"
 )
 
 // App holds all wired dependencies.
 type App struct {
-	Config    *config.Config
-	Logger    *slog.Logger
-	Metrics   *metrics.Registry
-	Storage   repository.Storage
-	EventBus  porteventbus.EventBus
+	Config     *config.Config
+	Logger     *slog.Logger
+	Metrics    *metrics.Registry
+	Storage    repository.Storage
+	EventBus   porteventbus.EventBus
 	Cache      portcache.Cache
 	Embedder   portembedding.Provider
 	Summarizer portsummary.Provider
 	Email      portemail.Provider
-	Publisher portpublisher.Publisher
-	Scheduler *scheduler.Scheduler
+	Publisher  portpublisher.Publisher
+	Scheduler  *scheduler.Scheduler
 }
 
 // Build wires all dependencies from configuration.
@@ -175,7 +176,13 @@ func buildPublisher(cfg *config.Config) (portpublisher.Publisher, error) {
 func registerHandlers(ctx context.Context, app *App) {
 	log := app.Logger
 
-	_ = app.EventBus.Subscribe(ctx, events.TopicEmailFetched, extractor.Handle(log))
+	_ = app.EventBus.Subscribe(ctx, events.TopicEmailFetched, newsletter.Handle(log, app.Storage, app.EventBus, newsletter.Config{
+		ScoreThreshold: app.Config.Newsletter.ScoreThreshold,
+		Allowlist:      app.Config.Newsletter.Allowlist,
+		Denylist:       app.Config.Newsletter.Denylist,
+		Metrics:        app.Metrics,
+	}))
+	_ = app.EventBus.Subscribe(ctx, events.TopicEmailDetected, extractor.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicArticleCreated, embedding.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicEmbeddingCreated, clustering.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(log))

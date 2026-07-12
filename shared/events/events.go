@@ -3,13 +3,14 @@ package events
 // Topic constants for the event bus.
 const (
 	TopicEmailFetched     = "email.fetched"
+	TopicEmailDetected    = "email.detected"
 	TopicArticleCreated   = "article.created"
 	TopicEmbeddingCreated = "embedding.created"
 	TopicClusterUpdated   = "cluster.updated"
 	TopicDigestReady      = "digest.ready"
 )
 
-// EmailFetched is emitted when a newsletter email has been fetched.
+// EmailFetched is emitted when an email has been fetched and stored.
 type EmailFetched struct {
 	UserID  string
 	EmailID string
@@ -17,6 +18,15 @@ type EmailFetched struct {
 
 func (e EmailFetched) Name() string { return TopicEmailFetched }
 func (e EmailFetched) Payload() any { return e }
+
+// EmailDetected is emitted when an email has been classified as a newsletter.
+type EmailDetected struct {
+	UserID  string
+	EmailID string
+}
+
+func (e EmailDetected) Name() string { return TopicEmailDetected }
+func (e EmailDetected) Payload() any { return e }
 
 // ArticleCreated is emitted when an article has been extracted from an email.
 type ArticleCreated struct {

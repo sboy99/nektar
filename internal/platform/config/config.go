@@ -17,13 +17,14 @@ type Config struct {
 	Email     ProviderConfig `mapstructure:"email"`
 	Publisher ProviderConfig `mapstructure:"publisher"`
 
-	Redis     RedisConfig     `mapstructure:"redis"`
-	Postgres  PostgresConfig  `mapstructure:"postgres"`
-	Gmail     GmailConfig     `mapstructure:"gmail"`
-	Gemini    GeminiConfig    `mapstructure:"gemini"`
-	Discord   DiscordConfig   `mapstructure:"discord"`
-	Scheduler SchedulerConfig `mapstructure:"scheduler"`
-	Server    ServerConfig    `mapstructure:"server"`
+	Redis      RedisConfig      `mapstructure:"redis"`
+	Postgres   PostgresConfig   `mapstructure:"postgres"`
+	Gmail      GmailConfig      `mapstructure:"gmail"`
+	Gemini     GeminiConfig     `mapstructure:"gemini"`
+	Discord    DiscordConfig    `mapstructure:"discord"`
+	Newsletter NewsletterConfig `mapstructure:"newsletter"`
+	Scheduler  SchedulerConfig  `mapstructure:"scheduler"`
+	Server     ServerConfig     `mapstructure:"server"`
 }
 
 // ProviderConfig selects an infrastructure implementation.
@@ -48,22 +49,29 @@ type PostgresConfig struct {
 
 // GmailConfig configures Gmail API access.
 type GmailConfig struct {
-	ClientID       string            `mapstructure:"client_id"`
-	ClientSecret   string            `mapstructure:"client_secret"`
-	DefaultQuery   string            `mapstructure:"default_query"`
-	RefreshTokens  map[string]string `mapstructure:"refresh_tokens"`
+	ClientID      string            `mapstructure:"client_id"`
+	ClientSecret  string            `mapstructure:"client_secret"`
+	DefaultQuery  string            `mapstructure:"default_query"`
+	RefreshTokens map[string]string `mapstructure:"refresh_tokens"`
 }
 
 // GeminiConfig configures the Gemini LLM provider.
 type GeminiConfig struct {
-	APIKey  string `mapstructure:"api_key"`
-	Model   string `mapstructure:"model"`
+	APIKey     string `mapstructure:"api_key"`
+	Model      string `mapstructure:"model"`
 	EmbedModel string `mapstructure:"embed_model"`
 }
 
 // DiscordConfig configures Discord webhook publishing.
 type DiscordConfig struct {
 	WebhookURL string `mapstructure:"webhook_url"`
+}
+
+// NewsletterConfig configures newsletter detection heuristics.
+type NewsletterConfig struct {
+	ScoreThreshold float64  `mapstructure:"score_threshold"`
+	Allowlist      []string `mapstructure:"allowlist"`
+	Denylist       []string `mapstructure:"denylist"`
 }
 
 // SchedulerConfig configures the job scheduler.
@@ -118,6 +126,8 @@ func setDefaults(v *viper.Viper) {
 
 	v.SetDefault("gemini.model", "gemini-2.0-flash")
 	v.SetDefault("gemini.embed_model", "text-embedding-004")
+
+	v.SetDefault("newsletter.score_threshold", 0.5)
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
 	v.SetDefault("server.addr", ":8080")

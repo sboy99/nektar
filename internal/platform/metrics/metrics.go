@@ -13,10 +13,12 @@ type Registry struct {
 	EventsHandled   *prometheus.CounterVec
 	HandlerErrors   *prometheus.CounterVec
 
-	EmailsFetched      prometheus.Counter
-	EmailsDeduplicated prometheus.Counter
-	FetchErrors        *prometheus.CounterVec
-	FetchDuration      prometheus.Histogram
+	EmailsFetched       prometheus.Counter
+	EmailsDeduplicated  prometheus.Counter
+	FetchErrors         *prometheus.CounterVec
+	FetchDuration       prometheus.Histogram
+	NewslettersDetected prometheus.Counter
+	EmailsRejected      prometheus.Counter
 }
 
 // NewRegistry creates and registers application metrics.
@@ -63,6 +65,14 @@ func NewRegistry() *Registry {
 			Help:    "Duration of a full fetch job run",
 			Buckets: prometheus.DefBuckets,
 		}),
+		NewslettersDetected: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_newsletters_detected_total",
+			Help: "Total number of emails classified as newsletters",
+		}),
+		EmailsRejected: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_emails_rejected_total",
+			Help: "Total number of emails rejected as non-newsletters",
+		}),
 	}
 
 	prometheus.MustRegister(
@@ -73,6 +83,8 @@ func NewRegistry() *Registry {
 		r.EmailsDeduplicated,
 		r.FetchErrors,
 		r.FetchDuration,
+		r.NewslettersDetected,
+		r.EmailsRejected,
 	)
 
 	return r

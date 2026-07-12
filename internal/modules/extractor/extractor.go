@@ -7,7 +7,7 @@ import (
 	porteventbus "github.com/sboy99/nektar/internal/ports/eventbus"
 )
 
-// Handle processes EmailFetched events.
+// Handle processes EmailDetected events.
 func Handle(logger *slog.Logger) porteventbus.Handler {
 	return func(ctx context.Context, event porteventbus.Event) error {
 		logger.Info("extractor: received event (stub)", "event", event.Name())

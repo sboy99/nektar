@@ -92,7 +92,7 @@ nektar/
 ├── cmd/nektar/              # Application entrypoint
 ├── cmd/nektar-gmail-auth/   # OAuth helper to obtain Gmail refresh tokens
 ├── internal/
-│   ├── modules/             # Business capabilities (fetcher implemented; others stubbed)
+│   ├── modules/             # Business capabilities (fetcher + newsletter; others stubbed)
 │   ├── ports/               # Interface contracts
 │   │   ├── embedding/       # EmbeddingProvider
 │   │   ├── summary/         # SummaryProvider
@@ -171,6 +171,19 @@ VALUES ('user-1', '', now(), 'newer_than:7d', 'alice');
 
 `refresh_token_ref` must match a key in `gmail.refresh_tokens`. Leave `history_id` empty for the first bootstrap list sync; subsequent runs use the History API.
 
+### Newsletter Detection
+
+After fetch, emails are classified heuristically (no LLM). Confirmed newsletters emit `email.detected` for extraction; others are stored as `rejected`.
+
+Signals: List-ID, List-Unsubscribe, Precedence/bulk headers, campaign/ESP headers, spam flags, plus optional sender allow/deny lists.
+
+```yaml
+newsletter:
+  score_threshold: 0.5
+  allowlist: []   # e.g. "news@tldr.tech" or "@substack.com"
+  denylist: []
+```
+
 ### Environment Overrides
 
 Any config value can be overridden via environment variables with the `NEKTAR_` prefix:
@@ -207,7 +220,8 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 0 | Complete | Domain model, validation, repository ports, split LLM ports |
 | Phase 1 | Complete | PostgreSQL schema, migrations, repository implementations |
 | Phase 2 | Complete | Multi-user Gmail fetch, History sync, EmailFetched publishing |
-| Phase 3+ | Pending | Newsletter detection, extraction, and remaining modules |
+| Phase 3 | Complete | Heuristic newsletter detection, EmailDetected, allow/deny lists |
+| Phase 4+ | Pending | Extraction, embedding, clustering, digest, publisher |
 
 ## License
 

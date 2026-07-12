@@ -38,7 +38,11 @@ PostgreSQL schema, migrations, and repository implementations are in place (plus
 
 Multi-user Gmail fetch pipeline: History API incremental sync, per-user refresh tokens, fetcher dedupe/store/`EmailFetched`, metrics, and retry.
 
-Remaining work is primarily newsletter detection (Phase 3), extraction and later pipeline stages, testing, and deployment.
+## Phase 3 Complete
+
+Heuristic newsletter detection: List-ID / List-Unsubscribe / bulk headers, allow/deny lists, spam filtering, `EmailDetected` event for confirmed newsletters.
+
+Remaining work is primarily extraction and later pipeline stages, testing, and deployment.
 
 ---
 
@@ -221,13 +225,13 @@ Ignore everything that is not a newsletter.
 
 ## Tasks
 
-- [ ] List-ID parsing
-- [ ] Bulk header detection
-- [ ] List-Unsubscribe parsing
-- [ ] Sender allowlist
-- [ ] Sender denylist
-- [ ] Spam filtering
-- [ ] Newsletter classification
+- [x] List-ID parsing
+- [x] Bulk header detection
+- [x] List-Unsubscribe parsing
+- [x] Sender allowlist
+- [x] Sender denylist
+- [x] Spam filtering
+- [x] Newsletter classification
 
 ## Output
 
@@ -550,7 +554,7 @@ Knowledge Item
 The MVP is complete when:
 
 - [ ] Scheduler fetches newsletters from Gmail
-- [ ] Newsletter detector filters non-newsletters
+- [x] Newsletter detector filters non-newsletters
 - [ ] Articles are extracted and normalized
 - [ ] Embeddings are generated
 - [ ] Articles are clustered
