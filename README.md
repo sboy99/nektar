@@ -92,7 +92,7 @@ nektar/
 ├── cmd/nektar/              # Application entrypoint
 ├── cmd/nektar-gmail-auth/   # OAuth helper to obtain Gmail refresh tokens
 ├── internal/
-│   ├── modules/             # Business capabilities (fetcher, newsletter, extractor; others stubbed)
+│   ├── modules/             # Business capabilities (fetcher, newsletter, extractor, embedding; others stubbed)
 │   ├── ports/               # Interface contracts
 │   │   ├── embedding/       # EmbeddingProvider
 │   │   ├── summary/         # SummaryProvider
@@ -194,6 +194,20 @@ extraction:
   words_per_minute: 200
 ```
 
+### Embedding Generation
+
+On `article.created`, the embedding module embeds article plain text (Markdown fallback) via the EmbeddingProvider (Gemini by default), caches by content hash, persists the vector + an `LLMRequest` cost record, and emits `embedding.created`.
+
+```yaml
+gemini:
+  embed_model: gemini-embedding-001
+  embed_dimensions: 768
+  embed_cost_per_1m_tokens: 0.15
+
+embedding:
+  cache_ttl: 720h
+```
+
 ### Environment Overrides
 
 Any config value can be overridden via environment variables with the `NEKTAR_` prefix:
@@ -232,7 +246,8 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 2 | Complete | Multi-user Gmail fetch, History sync, EmailFetched publishing |
 | Phase 3 | Complete | Heuristic newsletter detection, EmailDetected, allow/deny lists |
 | Phase 4 | Complete | Extraction pipeline, article split, ArticleCreated |
-| Phase 5+ | Pending | Embedding, clustering, digest, publisher |
+| Phase 5 | Complete | Embedding generation, cache, cost tracking, EmbeddingCreated |
+| Phase 6+ | Pending | Clustering, digest, publisher |
 
 ## License
 

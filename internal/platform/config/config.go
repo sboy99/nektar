@@ -24,6 +24,7 @@ type Config struct {
 	Discord    DiscordConfig    `mapstructure:"discord"`
 	Newsletter NewsletterConfig `mapstructure:"newsletter"`
 	Extraction ExtractionConfig `mapstructure:"extraction"`
+	Embedding  EmbeddingConfig  `mapstructure:"embedding"`
 	Scheduler  SchedulerConfig  `mapstructure:"scheduler"`
 	Server     ServerConfig     `mapstructure:"server"`
 }
@@ -58,9 +59,16 @@ type GmailConfig struct {
 
 // GeminiConfig configures the Gemini LLM provider.
 type GeminiConfig struct {
-	APIKey     string `mapstructure:"api_key"`
-	Model      string `mapstructure:"model"`
-	EmbedModel string `mapstructure:"embed_model"`
+	APIKey               string  `mapstructure:"api_key"`
+	Model                string  `mapstructure:"model"`
+	EmbedModel           string  `mapstructure:"embed_model"`
+	EmbedDimensions      int     `mapstructure:"embed_dimensions"`
+	EmbedCostPer1MTokens float64 `mapstructure:"embed_cost_per_1m_tokens"`
+}
+
+// EmbeddingConfig configures the embedding pipeline.
+type EmbeddingConfig struct {
+	CacheTTL time.Duration `mapstructure:"cache_ttl"`
 }
 
 // DiscordConfig configures Discord webhook publishing.
@@ -132,12 +140,16 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("gmail.default_query", "newer_than:7d")
 
 	v.SetDefault("gemini.model", "gemini-2.0-flash")
-	v.SetDefault("gemini.embed_model", "text-embedding-004")
+	v.SetDefault("gemini.embed_model", "gemini-embedding-001")
+	v.SetDefault("gemini.embed_dimensions", 768)
+	v.SetDefault("gemini.embed_cost_per_1m_tokens", 0.15)
 
 	v.SetDefault("newsletter.score_threshold", 0.5)
 
 	v.SetDefault("extraction.min_article_chars", 100)
 	v.SetDefault("extraction.words_per_minute", 200)
+
+	v.SetDefault("embedding.cache_ttl", "720h")
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
 	v.SetDefault("server.addr", ":8080")

@@ -36,7 +36,9 @@ gmail:
 gemini:
   api_key: ""
   model: gemini-2.0-flash
-  embed_model: text-embedding-004
+  embed_model: gemini-embedding-001
+  embed_dimensions: 768
+  embed_cost_per_1m_tokens: 0.15
 
 discord:
   webhook_url: ""
@@ -49,6 +51,9 @@ newsletter:
 extraction:
   min_article_chars: 100
   words_per_minute: 200
+
+embedding:
+  cache_ttl: 720h
 
 scheduler:
   fetch_interval: 15m

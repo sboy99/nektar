@@ -23,6 +23,12 @@ type Registry struct {
 	ArticlesExtracted  prometheus.Counter
 	ExtractionErrors   *prometheus.CounterVec
 	ExtractionDuration prometheus.Histogram
+
+	EmbeddingsGenerated prometheus.Counter
+	EmbeddingErrors     *prometheus.CounterVec
+	EmbeddingDuration   prometheus.Histogram
+	LLMLatency          *prometheus.HistogramVec
+	LLMTokens           *prometheus.CounterVec
 }
 
 // NewRegistry creates and registers application metrics.
@@ -93,6 +99,37 @@ func NewRegistry() *Registry {
 			Help:    "Duration of an extraction handler run",
 			Buckets: prometheus.DefBuckets,
 		}),
+		EmbeddingsGenerated: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_embeddings_generated_total",
+			Help: "Total number of article embeddings generated",
+		}),
+		EmbeddingErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_embedding_errors_total",
+				Help: "Total number of embedding pipeline errors",
+			},
+			[]string{"reason"},
+		),
+		EmbeddingDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    "nektar_embedding_duration_seconds",
+			Help:    "Duration of an embedding handler run",
+			Buckets: prometheus.DefBuckets,
+		}),
+		LLMLatency: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "nektar_llm_latency_seconds",
+				Help:    "Latency of LLM API calls",
+				Buckets: prometheus.DefBuckets,
+			},
+			[]string{"provider", "operation"},
+		),
+		LLMTokens: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_llm_tokens_total",
+				Help: "Total tokens consumed by LLM API calls",
+			},
+			[]string{"provider", "operation"},
+		),
 	}
 
 	prometheus.MustRegister(
@@ -108,6 +145,11 @@ func NewRegistry() *Registry {
 		r.ArticlesExtracted,
 		r.ExtractionErrors,
 		r.ExtractionDuration,
+		r.EmbeddingsGenerated,
+		r.EmbeddingErrors,
+		r.EmbeddingDuration,
+		r.LLMLatency,
+		r.LLMTokens,
 	)
 
 	return r

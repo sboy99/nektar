@@ -46,7 +46,11 @@ Heuristic newsletter detection: List-ID / List-Unsubscribe / bulk headers, allow
 
 Extraction pipeline: MIME/HTML/plain parsing, HTML normalization, markdown conversion, heuristic article splitting, persistence, and `ArticleCreated` events.
 
-Remaining work is primarily embedding and later pipeline stages, testing, and deployment.
+## Phase 5 Complete
+
+Embedding pipeline: Gemini EmbedContent, content-addressed cache, persistence, LLMRequest cost tracking, and `EmbeddingCreated` events.
+
+Remaining work is primarily clustering and later pipeline stages, testing, and deployment.
 
 ---
 
@@ -303,20 +307,20 @@ SummaryProvider
 
 ## Tasks
 
-- [ ] Generate embeddings
-- [ ] Persist embedding
-- [ ] Cache embedding
-- [ ] Publish `EmbeddingCreated`
+- [x] Generate embeddings
+- [x] Persist embedding
+- [x] Cache embedding
+- [x] Publish `EmbeddingCreated`
 
 ## Cost Tracking
 
 Persist:
 
-- [ ] tokens
-- [ ] latency
-- [ ] provider
-- [ ] model
-- [ ] estimated cost
+- [x] tokens
+- [x] latency
+- [x] provider
+- [x] model
+- [x] estimated cost
 
 ---
 
@@ -428,13 +432,13 @@ Track:
 - [x] Emails fetched
 - [x] Newsletters detected
 - [x] Articles extracted
-- [ ] Embeddings generated
+- [x] Embeddings generated
 - [ ] Clusters created
 - [ ] Duplicate articles
 - [ ] Digest latency
 - [ ] Publish latency
-- [ ] LLM latency
-- [ ] Token usage
+- [x] LLM latency
+- [x] Token usage
 
 ## Logging
 

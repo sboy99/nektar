@@ -145,6 +145,7 @@ func buildGemini(ctx context.Context, cfg *config.Config) (*gemini.Provider, err
 			APIKey:     cfg.Gemini.APIKey,
 			Model:      cfg.Gemini.Model,
 			EmbedModel: cfg.Gemini.EmbedModel,
+			Dimensions: cfg.Gemini.EmbedDimensions,
 		})
 	default:
 		return nil, fmt.Errorf("unknown llm provider: %s", cfg.LLM.Provider)
@@ -187,7 +188,16 @@ func registerHandlers(ctx context.Context, app *App) {
 		WordsPerMinute:  app.Config.Extraction.WordsPerMinute,
 		Metrics:         app.Metrics,
 	}))
-	_ = app.EventBus.Subscribe(ctx, events.TopicArticleCreated, embedding.Handle(log))
+	_ = app.EventBus.Subscribe(ctx, events.TopicArticleCreated, embedding.Handle(
+		log, app.Storage, app.EventBus, app.Embedder, app.Cache, embedding.Config{
+			Provider:        app.Config.LLM.Provider,
+			Model:           app.Config.Gemini.EmbedModel,
+			Dimensions:      app.Config.Gemini.EmbedDimensions,
+			CacheTTL:        app.Config.Embedding.CacheTTL,
+			CostPer1MTokens: app.Config.Gemini.EmbedCostPer1MTokens,
+			Metrics:         app.Metrics,
+		},
+	))
 	_ = app.EventBus.Subscribe(ctx, events.TopicEmbeddingCreated, clustering.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicDigestReady, modpublisher.Handle(log, app.Publisher))
