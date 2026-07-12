@@ -88,10 +88,11 @@ cp .env.example .env
 ```bash
 NEKTAR_GMAIL_CLIENT_ID=...
 NEKTAR_GMAIL_CLIENT_SECRET=...
-NEKTAR_GMAIL_REFRESH_TOKENS={"alice":"1//0g..."}
 NEKTAR_GEMINI_API_KEY=...
 NEKTAR_DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
+
+Per-user Gmail **refresh tokens** are stored in Postgres (`gmail_sync.refresh_token`), not in `.env`.
 
 `configs/config.yaml` holds non-secret settings only. On startup, `config.Load` reads `.env` then `.env.local` from the working directory (optional override: `NEKTAR_ENV_FILE`). Existing OS env vars always win.
 
@@ -110,13 +111,12 @@ You can still export the same `NEKTAR_*` variables in your shell instead of usin
 go run ./cmd/nektar-gmail-auth \
   -client-id="$NEKTAR_GMAIL_CLIENT_ID" \
   -client-secret="$NEKTAR_GMAIL_CLIENT_SECRET" \
-  -ref=alice
+  -user-id=user-1 \
+  -email=you@example.com
 ```
 
 3. Open the printed URL, approve access (read-only Gmail scope).
-4. Add the printed `.env` lines (`NEKTAR_GMAIL_CLIENT_ID`, `NEKTAR_GMAIL_CLIENT_SECRET`, `NEKTAR_GMAIL_REFRESH_TOKENS`).
-
-The `ref` (`alice`) must match `refresh_token_ref` in the database sync row (next step).
+4. Add the printed `.env` lines for client id/secret, then run the printed SQL to store the refresh token in `gmail_sync.refresh_token`.
 
 ### 3.4 Discord webhook
 
@@ -125,21 +125,21 @@ The `ref` (`alice`) must match `refresh_token_ref` in the database sync row (nex
 
 ### 3.5 Seed a user + Gmail sync cursor
 
-Nektar fetches for every row in `gmail_sync`. Seed once after migrations:
+Nektar fetches for every row in `gmail_sync`. Prefer the SQL printed by `nektar-gmail-auth`, or seed manually:
 
 ```bash
 psql 'postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' <<'SQL'
 INSERT INTO users (id, email, name, created_at, updated_at)
 VALUES ('user-1', 'you@example.com', 'You', now(), now());
 
-INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token_ref)
-VALUES ('user-1', '', now(), 'newer_than:7d', 'alice');
+INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token)
+VALUES ('user-1', '', now(), 'newer_than:7d', '1//0g...');
 SQL
 ```
 
 | Field | Meaning |
 |-------|---------|
-| `refresh_token_ref` | Key inside `NEKTAR_GMAIL_REFRESH_TOKENS` JSON |
+| `refresh_token` | Gmail OAuth refresh token for this mailbox |
 | `query` | Gmail search for the first bootstrap sync |
 | `history_id` | Leave empty for the first run; History API fills it afterward |
 
@@ -259,11 +259,10 @@ make test-integration
 
 ### 4.7 Multi-user
 
-Each Gmail mailbox is a `users` + `gmail_sync` pair with its own `refresh_token_ref`.
+Each Gmail mailbox is a `users` + `gmail_sync` pair with its own `refresh_token`.
 
-1. Run `nektar-gmail-auth -ref=bob`
-2. Merge `bob` into `NEKTAR_GMAIL_REFRESH_TOKENS` in `.env`
-3. Insert another user + `gmail_sync` row pointing at `bob`
+1. Run `nektar-gmail-auth -user-id=user-2 -email=bob@example.com`
+2. Apply the printed SQL (stores refresh token on that user's `gmail_sync` row)
 
 Digests and Discord posts are produced per user pipeline activity.
 
@@ -291,7 +290,7 @@ Full sample: [`configs/config.yaml`](../configs/config.yaml).
 |---------|--------|
 | Process exits on start | Config path, Gemini key, DSN, Redis addr; read stderr |
 | `/ready` fails | `make infra-up`; verify DSN / Redis |
-| No emails fetched | `gmail_sync` row exists; `refresh_token_ref` matches; OAuth client + Gmail API enabled |
+| No emails fetched | `gmail_sync` row exists with non-empty `refresh_token`; OAuth client + Gmail API enabled |
 | OAuth helper fails | Redirect URI exact match; client ID/secret; port `8085` free |
 | Emails fetched but nothing extracted | Newsletter score / denylist; try allowlisting known senders |
 | Articles but no digest | `digest.min_*` / `lookback`; wait for clustering; check logs for digest module |

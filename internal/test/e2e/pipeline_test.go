@@ -96,10 +96,10 @@ func TestPipelineFetchToPublish(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID:          "user-1",
-		Query:           "label:newsletter",
-		RefreshTokenRef: "alice",
-		LastSyncedAt:    time.Now().UTC(),
+		UserID:       "user-1",
+		Query:        "label:newsletter",
+		RefreshToken: "token",
+		LastSyncedAt: time.Now().UTC(),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -172,8 +172,7 @@ func TestPipelineFetchToPublish(t *testing.T) {
 	}
 
 	job := fetcher.Handle(logger, emailProvider, storage, bus, fetcher.Config{
-		RefreshTokens: map[string]string{"alice": "token"},
-		DefaultQuery:  "newer_than:7d",
+		DefaultQuery: "newer_than:7d",
 	})
 	if err := job(ctx); err != nil {
 		t.Fatalf("fetch: %v", err)

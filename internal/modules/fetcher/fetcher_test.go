@@ -45,10 +45,10 @@ func TestHandleFetchesDedupesAndPublishes(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID:          "user-1",
-		Query:           "label:newsletter",
-		RefreshTokenRef: "alice",
-		LastSyncedAt:    time.Now().UTC(),
+		UserID:       "user-1",
+		Query:        "label:newsletter",
+		RefreshToken: "token",
+		LastSyncedAt: time.Now().UTC(),
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -80,8 +80,7 @@ func TestHandleFetchesDedupesAndPublishes(t *testing.T) {
 	}}
 
 	job := Handle(logger, provider, storage, bus, Config{
-		RefreshTokens: map[string]string{"alice": "token"},
-		DefaultQuery:  "newer_than:7d",
+		DefaultQuery: "newer_than:7d",
 	})
 	if err := job(ctx); err != nil {
 		t.Fatalf("job: %v", err)
@@ -102,6 +101,9 @@ func TestHandleFetchesDedupesAndPublishes(t *testing.T) {
 	if sync.HistoryID != "123" {
 		t.Fatalf("history id: %q", sync.HistoryID)
 	}
+	if sync.RefreshToken != "token" {
+		t.Fatalf("refresh token not preserved: %q", sync.RefreshToken)
+	}
 	if len(published) != 1 || published[0].EmailID != got.ID {
 		t.Fatalf("published: %+v", published)
 	}
@@ -117,13 +119,12 @@ func TestHandleSkipsMissingToken(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	_ = storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID:          "user-1",
-		RefreshTokenRef: "missing",
-		LastSyncedAt:    time.Now().UTC(),
+		UserID:       "user-1",
+		LastSyncedAt: time.Now().UTC(),
 	})
 
 	provider := &stubProvider{result: &portemail.FetchResult{NewHistoryID: "1"}}
-	job := Handle(logger, provider, storage, bus, Config{RefreshTokens: map[string]string{}})
+	job := Handle(logger, provider, storage, bus, Config{})
 	if err := job(ctx); err != nil {
 		t.Fatalf("job: %v", err)
 	}

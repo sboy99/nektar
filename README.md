@@ -83,7 +83,7 @@ Schema lives in `internal/adapters/postgres/migrations/`:
 | Table | Purpose |
 |-------|---------|
 | `users` | Account identity |
-| `gmail_sync` | Incremental Gmail sync cursor |
+| `gmail_sync` | Incremental Gmail sync cursor + refresh token |
 | `emails` | Fetched messages |
 | `articles` | Extracted content |
 | `clusters` / `cluster_articles` | Semantic groupings |
@@ -151,7 +151,7 @@ cache:
   provider: inmemory
 ```
 
-Note: Gemini still requires a valid API key to bootstrap. Gmail OAuth app credentials are needed for live fetch; refresh tokens are resolved per user at runtime (see Gmail setup below).
+Note: Gemini still requires a valid API key to bootstrap. Gmail OAuth app credentials live in `.env`; per-user refresh tokens are stored in `gmail_sync.refresh_token` (see Gmail setup below).
 
 ### Gmail OAuth Setup
 
@@ -163,22 +163,13 @@ Note: Gemini still requires a valid API key to bootstrap. Gmail OAuth app creden
 go run ./cmd/nektar-gmail-auth \
   -client-id="$NEKTAR_GMAIL_CLIENT_ID" \
   -client-secret="$NEKTAR_GMAIL_CLIENT_SECRET" \
-  -ref=alice
+  -user-id=user-1 \
+  -email=you@example.com
 ```
 
-4. Put the printed snippet into `configs/config.yaml` under `gmail.refresh_tokens`.
-5. Seed a user and sync cursor (example SQL):
+4. Add printed client id/secret to `.env`. Run the printed SQL to store the refresh token in `gmail_sync.refresh_token`.
 
-```sql
-INSERT INTO users (id, email, name, created_at, updated_at)
-VALUES ('user-1', 'you@example.com', 'You', now(), now());
-
-INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token_ref)
-VALUES ('user-1', '', now(), 'newer_than:7d', 'alice');
-```
-
-`refresh_token_ref` must match a key in `gmail.refresh_tokens`. Leave `history_id` empty for the first bootstrap list sync; subsequent runs use the History API.
-
+Leave `history_id` empty for the first bootstrap list sync; subsequent runs use the History API.
 ### Newsletter Detection
 
 After fetch, emails are classified heuristically (no LLM). Confirmed newsletters emit `email.detected` for extraction; others are stored as `rejected`.

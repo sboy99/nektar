@@ -240,9 +240,8 @@ func registerSchedulerJobs(app *App) {
 		Name:     "fetch_gmail",
 		Interval: app.Config.Scheduler.FetchInterval,
 		Fn: fetcher.Handle(app.Logger, app.Email, app.Storage, app.EventBus, fetcher.Config{
-			RefreshTokens: app.Config.Gmail.RefreshTokens,
-			DefaultQuery:  app.Config.Gmail.DefaultQuery,
-			Metrics:       app.Metrics,
+			DefaultQuery: app.Config.Gmail.DefaultQuery,
+			Metrics:      app.Metrics,
 			Retry: retry.Policy{
 				MaxAttempts: app.Config.Retry.FetchMaxAttempts,
 				BaseBackoff: app.Config.Retry.FetchBaseBackoff,
@@ -278,9 +277,7 @@ func registerSchedulerJobs(app *App) {
 	app.Scheduler.Register(scheduler.Job{
 		Name:     "refresh_oauth",
 		Interval: app.Config.Scheduler.OAuthRefreshInterval,
-		Fn: jobs.RefreshOAuth(app.Logger, app.Email, app.Storage, jobs.OAuthConfig{
-			RefreshTokens: app.Config.Gmail.RefreshTokens,
-		}),
+		Fn:       jobs.RefreshOAuth(app.Logger, app.Email, app.Storage, jobs.OAuthConfig{}),
 	})
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"golang.org/x/oauth2"
 	"google.golang.org/api/gmail/v1"
@@ -14,12 +15,15 @@ import (
 func main() {
 	clientID := flag.String("client-id", os.Getenv("NEKTAR_GMAIL_CLIENT_ID"), "OAuth client ID")
 	clientSecret := flag.String("client-secret", os.Getenv("NEKTAR_GMAIL_CLIENT_SECRET"), "OAuth client secret")
-	ref := flag.String("ref", "default", "refresh_tokens map key to print in the YAML snippet")
+	userID := flag.String("user-id", "user-1", "users.id / gmail_sync.user_id for the SQL seed")
+	email := flag.String("email", "you@example.com", "user email for the SQL seed")
+	name := flag.String("name", "You", "user display name for the SQL seed")
+	query := flag.String("query", "newer_than:7d", "initial Gmail search query for gmail_sync")
 	addr := flag.String("addr", "localhost:8085", "local redirect listen address")
 	flag.Parse()
 
 	if *clientID == "" || *clientSecret == "" {
-		fmt.Fprintln(os.Stderr, "usage: nektar-gmail-auth -client-id=... -client-secret=... [-ref=alice]")
+		fmt.Fprintln(os.Stderr, "usage: nektar-gmail-auth -client-id=... -client-secret=... [-user-id=user-1]")
 		fmt.Fprintln(os.Stderr, "or set NEKTAR_GMAIL_CLIENT_ID and NEKTAR_GMAIL_CLIENT_SECRET")
 		os.Exit(1)
 	}
@@ -87,11 +91,38 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Refresh token obtained. Add to .env:")
+	fmt.Println("Refresh token obtained.")
+	fmt.Println()
+	fmt.Println("1) Keep app credentials in .env:")
 	fmt.Println()
 	fmt.Printf("NEKTAR_GMAIL_CLIENT_ID=%s\n", *clientID)
 	fmt.Printf("NEKTAR_GMAIL_CLIENT_SECRET=%s\n", *clientSecret)
-	fmt.Printf("NEKTAR_GMAIL_REFRESH_TOKENS={\"%s\":%q}\n", *ref, token.RefreshToken)
 	fmt.Println()
-	fmt.Println("Then seed a user + gmail_sync row with refresh_token_ref matching that key.")
+	fmt.Println("2) Store the refresh token in Postgres (gmail_sync.refresh_token):")
+	fmt.Println()
+	fmt.Printf(`INSERT INTO users (id, email, name, created_at, updated_at)
+VALUES (%s, %s, %s, now(), now())
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email,
+  name = EXCLUDED.name,
+  updated_at = now();
+
+INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token)
+VALUES (%s, '', now(), %s, %s)
+ON CONFLICT (user_id) DO UPDATE SET
+  refresh_token = EXCLUDED.refresh_token,
+  query = EXCLUDED.query,
+  last_synced_at = EXCLUDED.last_synced_at;
+`,
+		sqlQuote(*userID),
+		sqlQuote(*email),
+		sqlQuote(*name),
+		sqlQuote(*userID),
+		sqlQuote(*query),
+		sqlQuote(token.RefreshToken),
+	)
+}
+
+func sqlQuote(s string) string {
+	return "'" + strings.ReplaceAll(s, "'", "''") + "'"
 }

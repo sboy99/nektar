@@ -38,28 +38,28 @@ func (r *userRepo) FindByEmail(ctx context.Context, email string) (*domain.User,
 
 func (r *userRepo) SaveGmailSync(ctx context.Context, sync *domain.GmailSync) error {
 	_, err := r.s.pool.Exec(ctx, `
-		INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token_ref)
+		INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token)
 		VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT (user_id) DO UPDATE SET
 			history_id = EXCLUDED.history_id,
 			last_synced_at = EXCLUDED.last_synced_at,
 			query = EXCLUDED.query,
-			refresh_token_ref = EXCLUDED.refresh_token_ref
-	`, sync.UserID, sync.HistoryID, sync.LastSyncedAt, sync.Query, sync.RefreshTokenRef)
+			refresh_token = EXCLUDED.refresh_token
+	`, sync.UserID, sync.HistoryID, sync.LastSyncedAt, sync.Query, sync.RefreshToken)
 	return err
 }
 
 func (r *userRepo) GetGmailSync(ctx context.Context, userID string) (*domain.GmailSync, error) {
 	var sync domain.GmailSync
 	err := r.s.pool.QueryRow(ctx, `
-		SELECT user_id, history_id, last_synced_at, query, refresh_token_ref
+		SELECT user_id, history_id, last_synced_at, query, refresh_token
 		FROM gmail_sync WHERE user_id = $1
 	`, userID).Scan(
 		&sync.UserID,
 		&sync.HistoryID,
 		&sync.LastSyncedAt,
 		&sync.Query,
-		&sync.RefreshTokenRef,
+		&sync.RefreshToken,
 	)
 	if err != nil {
 		return nil, mapNotFound(err)
@@ -69,7 +69,7 @@ func (r *userRepo) GetGmailSync(ctx context.Context, userID string) (*domain.Gma
 
 func (r *userRepo) ListGmailSyncs(ctx context.Context) ([]*domain.GmailSync, error) {
 	rows, err := r.s.pool.Query(ctx, `
-		SELECT user_id, history_id, last_synced_at, query, refresh_token_ref
+		SELECT user_id, history_id, last_synced_at, query, refresh_token
 		FROM gmail_sync
 		ORDER BY user_id
 	`)
@@ -86,7 +86,7 @@ func (r *userRepo) ListGmailSyncs(ctx context.Context) ([]*domain.GmailSync, err
 			&sync.HistoryID,
 			&sync.LastSyncedAt,
 			&sync.Query,
-			&sync.RefreshTokenRef,
+			&sync.RefreshToken,
 		); err != nil {
 			return nil, err
 		}

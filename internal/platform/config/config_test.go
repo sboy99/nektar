@@ -37,19 +37,16 @@ gemini:
 		"NEKTAR_GMAIL_CLIENT_ID=id-from-env\n" +
 		"NEKTAR_GMAIL_CLIENT_SECRET=secret-from-env\n" +
 		"NEKTAR_GEMINI_API_KEY=gemini-key\n" +
-		"NEKTAR_DISCORD_WEBHOOK_URL=https://discord.example/hook\n" +
-		`NEKTAR_GMAIL_REFRESH_TOKENS={"alice":"token-1"}` + "\n"
+		"NEKTAR_DISCORD_WEBHOOK_URL=https://discord.example/hook\n"
 	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(envBody), 0o600); err != nil {
 		t.Fatal(err)
 	}
 
-	// Ensure OS env does not already set these (CI may be clean; clear just in case).
 	for _, k := range []string{
 		"NEKTAR_GMAIL_CLIENT_ID",
 		"NEKTAR_GMAIL_CLIENT_SECRET",
 		"NEKTAR_GEMINI_API_KEY",
 		"NEKTAR_DISCORD_WEBHOOK_URL",
-		"NEKTAR_GMAIL_REFRESH_TOKENS",
 		"NEKTAR_ENV_FILE",
 	} {
 		t.Cleanup(func(key string) func() {
@@ -81,9 +78,6 @@ gemini:
 	}
 	if cfg.Discord.WebhookURL != "https://discord.example/hook" {
 		t.Fatalf("webhook = %q", cfg.Discord.WebhookURL)
-	}
-	if cfg.Gmail.RefreshTokens["alice"] != "token-1" {
-		t.Fatalf("refresh_tokens = %#v", cfg.Gmail.RefreshTokens)
 	}
 }
 

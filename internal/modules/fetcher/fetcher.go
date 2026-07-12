@@ -21,10 +21,9 @@ import (
 
 // Config holds fetcher runtime dependencies beyond ports.
 type Config struct {
-	RefreshTokens map[string]string
-	DefaultQuery  string
-	Metrics       *metrics.Registry
-	Retry         retry.Policy
+	DefaultQuery string
+	Metrics      *metrics.Registry
+	Retry        retry.Policy
 }
 
 // Handle returns a scheduler job function that fetches emails for all users.
@@ -78,14 +77,9 @@ func syncUser(
 	cfg Config,
 	sync *domain.GmailSync,
 ) error {
-	if sync.RefreshTokenRef == "" {
-		incFetchError(cfg.Metrics, "missing_token_ref")
-		return fmt.Errorf("missing refresh_token_ref")
-	}
-	token, ok := cfg.RefreshTokens[sync.RefreshTokenRef]
-	if !ok || token == "" {
-		incFetchError(cfg.Metrics, "token_not_found")
-		return fmt.Errorf("refresh token not found for ref %q", sync.RefreshTokenRef)
+	if sync.RefreshToken == "" {
+		incFetchError(cfg.Metrics, "missing_token")
+		return fmt.Errorf("missing refresh_token")
 	}
 
 	query := sync.Query
@@ -97,7 +91,7 @@ func syncUser(
 		UserID:       sync.UserID,
 		HistoryID:    sync.HistoryID,
 		Query:        query,
-		RefreshToken: token,
+		RefreshToken: sync.RefreshToken,
 	})
 	if err != nil {
 		incFetchError(cfg.Metrics, "provider")
@@ -113,11 +107,11 @@ func syncUser(
 	}
 
 	updated := &domain.GmailSync{
-		UserID:          sync.UserID,
-		HistoryID:       result.NewHistoryID,
-		LastSyncedAt:    time.Now().UTC(),
-		Query:           sync.Query,
-		RefreshTokenRef: sync.RefreshTokenRef,
+		UserID:       sync.UserID,
+		HistoryID:    result.NewHistoryID,
+		LastSyncedAt: time.Now().UTC(),
+		Query:        sync.Query,
+		RefreshToken: sync.RefreshToken,
 	}
 	if err := storage.Users().SaveGmailSync(ctx, updated); err != nil {
 		incFetchError(cfg.Metrics, "save_sync")

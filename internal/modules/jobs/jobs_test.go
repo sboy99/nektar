@@ -59,7 +59,7 @@ func TestPublishDigestCatchUp(t *testing.T) {
 		t.Fatal(err)
 	}
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshTokenRef: "alice",
+		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshToken: "tok",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -171,22 +171,20 @@ func TestRefreshOAuth(t *testing.T) {
 	email := &stubEmail{}
 
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshTokenRef: "alice",
+		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshToken: "tok",
 	}); err != nil {
 		t.Fatal(err)
 	}
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID: "user-2", LastSyncedAt: time.Now().UTC(), RefreshTokenRef: "missing",
+		UserID: "user-2", LastSyncedAt: time.Now().UTC(),
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	job := RefreshOAuth(logger, email, storage, OAuthConfig{
-		RefreshTokens: map[string]string{"alice": "tok"},
-	})
+	job := RefreshOAuth(logger, email, storage, OAuthConfig{})
 	err := job(ctx)
 	if err == nil {
-		t.Fatal("expected failure for missing token ref")
+		t.Fatal("expected failure for missing refresh_token")
 	}
 	if email.refreshCalls != 1 {
 		t.Fatalf("refresh calls = %d, want 1", email.refreshCalls)
@@ -200,14 +198,12 @@ func TestRefreshOAuthProviderError(t *testing.T) {
 	email := &stubEmail{refreshErr: errors.New("invalid_grant")}
 
 	if err := storage.Users().SaveGmailSync(ctx, &domain.GmailSync{
-		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshTokenRef: "alice",
+		UserID: "user-1", LastSyncedAt: time.Now().UTC(), RefreshToken: "tok",
 	}); err != nil {
 		t.Fatal(err)
 	}
 
-	job := RefreshOAuth(logger, email, storage, OAuthConfig{
-		RefreshTokens: map[string]string{"alice": "tok"},
-	})
+	job := RefreshOAuth(logger, email, storage, OAuthConfig{})
 	if err := job(ctx); err == nil {
 		t.Fatal("expected error")
 	}

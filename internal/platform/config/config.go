@@ -1,7 +1,6 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -69,10 +68,9 @@ type PostgresConfig struct {
 
 // GmailConfig configures Gmail API access.
 type GmailConfig struct {
-	ClientID      string            `mapstructure:"client_id"`
-	ClientSecret  string            `mapstructure:"client_secret"`
-	DefaultQuery  string            `mapstructure:"default_query"`
-	RefreshTokens map[string]string `mapstructure:"refresh_tokens"`
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
+	DefaultQuery string `mapstructure:"default_query"`
 }
 
 // GeminiConfig configures the Gemini LLM provider.
@@ -162,7 +160,7 @@ type RetryConfig struct {
 //
 //	.env, then .env.local (overrides), then existing OS env (never overwritten).
 //
-// Map-style secrets (gmail refresh tokens) use NEKTAR_GMAIL_REFRESH_TOKENS JSON.
+// Per-user Gmail refresh tokens live in Postgres (gmail_sync.refresh_token), not env.
 func Load(path string) (*Config, error) {
 	if err := loadDotEnv(); err != nil {
 		return nil, err
@@ -188,10 +186,6 @@ func Load(path string) (*Config, error) {
 	var cfg Config
 	if err := v.Unmarshal(&cfg); err != nil {
 		return nil, fmt.Errorf("unmarshal config: %w", err)
-	}
-
-	if err := applyRefreshTokensFromEnv(&cfg); err != nil {
-		return nil, err
 	}
 
 	return &cfg, nil
@@ -230,19 +224,6 @@ func loadDotEnv() error {
 			}
 		}
 	}
-	return nil
-}
-
-func applyRefreshTokensFromEnv(cfg *Config) error {
-	raw := strings.TrimSpace(os.Getenv("NEKTAR_GMAIL_REFRESH_TOKENS"))
-	if raw == "" {
-		return nil
-	}
-	var tokens map[string]string
-	if err := json.Unmarshal([]byte(raw), &tokens); err != nil {
-		return fmt.Errorf("parse NEKTAR_GMAIL_REFRESH_TOKENS (want JSON object): %w", err)
-	}
-	cfg.Gmail.RefreshTokens = tokens
 	return nil
 }
 

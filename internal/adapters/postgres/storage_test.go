@@ -154,11 +154,11 @@ func TestUserRepository(t *testing.T) {
 	}
 
 	sync := &domain.GmailSync{
-		UserID:          "user-1",
-		HistoryID:       "hist-1",
-		LastSyncedAt:    now,
-		Query:           "label:newsletter",
-		RefreshTokenRef: "secret-ref",
+		UserID:       "user-1",
+		HistoryID:    "hist-1",
+		LastSyncedAt: now,
+		Query:        "label:newsletter",
+		RefreshToken: "secret-token",
 	}
 	if err := s.Users().SaveGmailSync(ctx, sync); err != nil {
 		t.Fatalf("SaveGmailSync: %v", err)
@@ -167,7 +167,7 @@ func TestUserRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetGmailSync: %v", err)
 	}
-	if gotSync.HistoryID != "hist-1" || gotSync.Query != "label:newsletter" {
+	if gotSync.HistoryID != "hist-1" || gotSync.Query != "label:newsletter" || gotSync.RefreshToken != "secret-token" {
 		t.Fatalf("unexpected sync: %+v", gotSync)
 	}
 

@@ -162,17 +162,15 @@ func CleanupOldEvents(
 	}
 }
 
-// OAuthConfig configures the OAuth refresh probe job.
-type OAuthConfig struct {
-	RefreshTokens map[string]string
-}
+// OAuthConfig is reserved for future OAuth refresh job options.
+type OAuthConfig struct{}
 
 // RefreshOAuth returns a job that validates/refreshes Gmail OAuth tokens.
 func RefreshOAuth(
 	logger *slog.Logger,
 	email portemail.Provider,
 	storage repository.Storage,
-	cfg OAuthConfig,
+	_ OAuthConfig,
 ) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
 		syncs, err := storage.Users().ListGmailSyncs(ctx)
@@ -182,24 +180,14 @@ func RefreshOAuth(
 
 		var okCount, failed int
 		for _, sync := range syncs {
-			if sync.RefreshTokenRef == "" {
-				logger.Warn("refresh_oauth: missing refresh_token_ref", "user_id", sync.UserID)
+			if sync.RefreshToken == "" {
+				logger.Warn("refresh_oauth: missing refresh_token", "user_id", sync.UserID)
 				failed++
 				continue
 			}
-			token, found := cfg.RefreshTokens[sync.RefreshTokenRef]
-			if !found || token == "" {
-				logger.Warn("refresh_oauth: token not found",
-					"user_id", sync.UserID,
-					"ref", sync.RefreshTokenRef,
-				)
-				failed++
-				continue
-			}
-			if refreshErr := email.RefreshToken(ctx, token); refreshErr != nil {
+			if refreshErr := email.RefreshToken(ctx, sync.RefreshToken); refreshErr != nil {
 				logger.Error("refresh_oauth: refresh failed",
 					"user_id", sync.UserID,
-					"ref", sync.RefreshTokenRef,
 					"error", refreshErr,
 				)
 				failed++
