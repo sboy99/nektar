@@ -26,11 +26,10 @@ redis:
 
 postgres:
   # dsn: from NEKTAR_POSTGRES_DSN in .env (default: local docker compose)
-  dsn: postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
+  dsn: postgres://postgres:postgres@localhost:5432/nektar?sslmode=disable
 
 gmail:
   # client_id / client_secret: from .env (NEKTAR_GMAIL_CLIENT_*)
-  # refresh tokens: stored in gmail_sync.refresh_token (DB)
   default_query: "newer_than:7d"
 
 gemini:
