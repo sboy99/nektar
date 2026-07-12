@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    name: Build & Upload Artifacts
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive: tar.gz
+          - goos: linux
+            goarch: arm64
+            archive: tar.gz
+          - goos: darwin
+            goarch: amd64
+            archive: tar.gz
+          - goos: darwin
+            goarch: arm64
+            archive: tar.gz
+          - goos: windows
+            goarch: amd64
+            archive: zip
+            ext: .exe
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p dist/pkg
+          VERSION="${GITHUB_REF_NAME}"
+          LDFLAGS="-s -w"
+
+          go build -trimpath -ldflags="${LDFLAGS}" \
+            -o "dist/pkg/nektar${{ matrix.ext }}" ./cmd/nektar
+          go build -trimpath -ldflags="${LDFLAGS}" \
+            -o "dist/pkg/nektar-gmail-auth${{ matrix.ext }}" ./cmd/nektar-gmail-auth
+
+          cp README.md configs/config.yaml dist/pkg/
+          echo "Built Nektar ${VERSION} for ${GOOS}/${GOARCH}"
+
+      - name: Package
+        run: |
+          name="nektar_${GITHUB_REF_NAME}_${{ matrix.goos }}_${{ matrix.goarch }}"
+          if [ "${{ matrix.archive }}" = "zip" ]; then
+            (cd dist/pkg && zip -r "../../dist/${name}.zip" .)
+          else
+            tar -C dist/pkg -czf "dist/${name}.tar.gz" .
+          fi
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/nektar_*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
