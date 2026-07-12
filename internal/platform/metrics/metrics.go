@@ -19,6 +19,10 @@ type Registry struct {
 	FetchDuration       prometheus.Histogram
 	NewslettersDetected prometheus.Counter
 	EmailsRejected      prometheus.Counter
+
+	ArticlesExtracted  prometheus.Counter
+	ExtractionErrors   *prometheus.CounterVec
+	ExtractionDuration prometheus.Histogram
 }
 
 // NewRegistry creates and registers application metrics.
@@ -73,6 +77,22 @@ func NewRegistry() *Registry {
 			Name: "nektar_emails_rejected_total",
 			Help: "Total number of emails rejected as non-newsletters",
 		}),
+		ArticlesExtracted: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_articles_extracted_total",
+			Help: "Total number of articles extracted from newsletters",
+		}),
+		ExtractionErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_extraction_errors_total",
+				Help: "Total number of extraction pipeline errors",
+			},
+			[]string{"reason"},
+		),
+		ExtractionDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    "nektar_extraction_duration_seconds",
+			Help:    "Duration of an extraction handler run",
+			Buckets: prometheus.DefBuckets,
+		}),
 	}
 
 	prometheus.MustRegister(
@@ -85,6 +105,9 @@ func NewRegistry() *Registry {
 		r.FetchDuration,
 		r.NewslettersDetected,
 		r.EmailsRejected,
+		r.ArticlesExtracted,
+		r.ExtractionErrors,
+		r.ExtractionDuration,
 	)
 
 	return r

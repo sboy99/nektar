@@ -23,6 +23,7 @@ type Config struct {
 	Gemini     GeminiConfig     `mapstructure:"gemini"`
 	Discord    DiscordConfig    `mapstructure:"discord"`
 	Newsletter NewsletterConfig `mapstructure:"newsletter"`
+	Extraction ExtractionConfig `mapstructure:"extraction"`
 	Scheduler  SchedulerConfig  `mapstructure:"scheduler"`
 	Server     ServerConfig     `mapstructure:"server"`
 }
@@ -72,6 +73,12 @@ type NewsletterConfig struct {
 	ScoreThreshold float64  `mapstructure:"score_threshold"`
 	Allowlist      []string `mapstructure:"allowlist"`
 	Denylist       []string `mapstructure:"denylist"`
+}
+
+// ExtractionConfig configures the content extraction pipeline.
+type ExtractionConfig struct {
+	MinArticleChars int `mapstructure:"min_article_chars"`
+	WordsPerMinute  int `mapstructure:"words_per_minute"`
 }
 
 // SchedulerConfig configures the job scheduler.
@@ -128,6 +135,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("gemini.embed_model", "text-embedding-004")
 
 	v.SetDefault("newsletter.score_threshold", 0.5)
+
+	v.SetDefault("extraction.min_article_chars", 100)
+	v.SetDefault("extraction.words_per_minute", 200)
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
 	v.SetDefault("server.addr", ":8080")

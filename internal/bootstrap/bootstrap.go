@@ -182,7 +182,11 @@ func registerHandlers(ctx context.Context, app *App) {
 		Denylist:       app.Config.Newsletter.Denylist,
 		Metrics:        app.Metrics,
 	}))
-	_ = app.EventBus.Subscribe(ctx, events.TopicEmailDetected, extractor.Handle(log))
+	_ = app.EventBus.Subscribe(ctx, events.TopicEmailDetected, extractor.Handle(log, app.Storage, app.EventBus, extractor.Config{
+		MinArticleChars: app.Config.Extraction.MinArticleChars,
+		WordsPerMinute:  app.Config.Extraction.WordsPerMinute,
+		Metrics:         app.Metrics,
+	}))
 	_ = app.EventBus.Subscribe(ctx, events.TopicArticleCreated, embedding.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicEmbeddingCreated, clustering.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(log))

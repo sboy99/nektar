@@ -92,7 +92,7 @@ nektar/
 ├── cmd/nektar/              # Application entrypoint
 ├── cmd/nektar-gmail-auth/   # OAuth helper to obtain Gmail refresh tokens
 ├── internal/
-│   ├── modules/             # Business capabilities (fetcher + newsletter; others stubbed)
+│   ├── modules/             # Business capabilities (fetcher, newsletter, extractor; others stubbed)
 │   ├── ports/               # Interface contracts
 │   │   ├── embedding/       # EmbeddingProvider
 │   │   ├── summary/         # SummaryProvider
@@ -184,6 +184,16 @@ newsletter:
   denylist: []
 ```
 
+### Content Extraction
+
+On `email.detected`, the extractor parses MIME/HTML/plain bodies, strips nav/footer/ads/unsubscribe chrome, converts to Markdown, and heuristically splits multi-story newsletters (headings / `<hr>`). Each article is persisted and emits `article.created`.
+
+```yaml
+extraction:
+  min_article_chars: 100
+  words_per_minute: 200
+```
+
 ### Environment Overrides
 
 Any config value can be overridden via environment variables with the `NEKTAR_` prefix:
@@ -221,7 +231,8 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 1 | Complete | PostgreSQL schema, migrations, repository implementations |
 | Phase 2 | Complete | Multi-user Gmail fetch, History sync, EmailFetched publishing |
 | Phase 3 | Complete | Heuristic newsletter detection, EmailDetected, allow/deny lists |
-| Phase 4+ | Pending | Extraction, embedding, clustering, digest, publisher |
+| Phase 4 | Complete | Extraction pipeline, article split, ArticleCreated |
+| Phase 5+ | Pending | Embedding, clustering, digest, publisher |
 
 ## License
 

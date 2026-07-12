@@ -46,6 +46,10 @@ newsletter:
   allowlist: []
   denylist: []
 
+extraction:
+  min_article_chars: 100
+  words_per_minute: 200
+
 scheduler:
   fetch_interval: 15m
 

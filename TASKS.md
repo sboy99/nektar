@@ -42,7 +42,11 @@ Multi-user Gmail fetch pipeline: History API incremental sync, per-user refresh 
 
 Heuristic newsletter detection: List-ID / List-Unsubscribe / bulk headers, allow/deny lists, spam filtering, `EmailDetected` event for confirmed newsletters.
 
-Remaining work is primarily extraction and later pipeline stages, testing, and deployment.
+## Phase 4 Complete
+
+Extraction pipeline: MIME/HTML/plain parsing, HTML normalization, markdown conversion, heuristic article splitting, persistence, and `ArticleCreated` events.
+
+Remaining work is primarily embedding and later pipeline stages, testing, and deployment.
 
 ---
 
@@ -266,23 +270,23 @@ Article
 
 ## Extractor
 
-- [ ] MIME parser
-- [ ] HTML parser
-- [ ] Plain text parser
+- [x] MIME parser
+- [x] HTML parser
+- [x] Plain text parser
 
 ## Normalizer
 
-- [ ] Remove navigation
-- [ ] Remove footer
-- [ ] Remove ads
-- [ ] Remove unsubscribe
-- [ ] Normalize whitespace
+- [x] Remove navigation
+- [x] Remove footer
+- [x] Remove ads
+- [x] Remove unsubscribe
+- [x] Normalize whitespace
 
 ## Splitter
 
-- [ ] Detect multiple articles
-- [ ] Persist articles
-- [ ] Publish `ArticleCreated`
+- [x] Detect multiple articles
+- [x] Persist articles
+- [x] Publish `ArticleCreated`
 
 ---
 
@@ -421,9 +425,9 @@ Document every scheduled job.
 
 Track:
 
-- [ ] Emails fetched
-- [ ] Newsletters detected
-- [ ] Articles extracted
+- [x] Emails fetched
+- [x] Newsletters detected
+- [x] Articles extracted
 - [ ] Embeddings generated
 - [ ] Clusters created
 - [ ] Duplicate articles
@@ -555,7 +559,7 @@ The MVP is complete when:
 
 - [ ] Scheduler fetches newsletters from Gmail
 - [x] Newsletter detector filters non-newsletters
-- [ ] Articles are extracted and normalized
+- [x] Articles are extracted and normalized
 - [ ] Embeddings are generated
 - [ ] Articles are clustered
 - [ ] Daily digest is generated
