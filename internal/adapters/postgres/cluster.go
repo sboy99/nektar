@@ -135,6 +135,17 @@ func (r *clusterRepo) UpdateCentroid(ctx context.Context, clusterID string, cent
 	return nil
 }
 
+func (r *clusterRepo) Delete(ctx context.Context, id string) error {
+	tag, err := r.s.pool.Exec(ctx, `DELETE FROM clusters WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return repository.ErrNotFound
+	}
+	return nil
+}
+
 func (r *clusterRepo) loadArticleIDs(ctx context.Context, clusterID string) ([]string, error) {
 	rows, err := r.s.pool.Query(ctx, `
 		SELECT article_id FROM cluster_articles WHERE cluster_id = $1 ORDER BY article_id

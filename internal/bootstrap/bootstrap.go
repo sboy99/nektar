@@ -198,7 +198,13 @@ func registerHandlers(ctx context.Context, app *App) {
 			Metrics:         app.Metrics,
 		},
 	))
-	_ = app.EventBus.Subscribe(ctx, events.TopicEmbeddingCreated, clustering.Handle(log))
+	_ = app.EventBus.Subscribe(ctx, events.TopicEmbeddingCreated, clustering.Handle(
+		log, app.Storage, app.EventBus, clustering.Config{
+			SimilarityThreshold: app.Config.Clustering.SimilarityThreshold,
+			MergeThreshold:      app.Config.Clustering.MergeThreshold,
+			Metrics:             app.Metrics,
+		},
+	))
 	_ = app.EventBus.Subscribe(ctx, events.TopicClusterUpdated, digest.Handle(log))
 	_ = app.EventBus.Subscribe(ctx, events.TopicDigestReady, modpublisher.Handle(log, app.Publisher))
 }

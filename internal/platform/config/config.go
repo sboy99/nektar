@@ -22,11 +22,12 @@ type Config struct {
 	Gmail      GmailConfig      `mapstructure:"gmail"`
 	Gemini     GeminiConfig     `mapstructure:"gemini"`
 	Discord    DiscordConfig    `mapstructure:"discord"`
-	Newsletter NewsletterConfig `mapstructure:"newsletter"`
-	Extraction ExtractionConfig `mapstructure:"extraction"`
-	Embedding  EmbeddingConfig  `mapstructure:"embedding"`
-	Scheduler  SchedulerConfig  `mapstructure:"scheduler"`
-	Server     ServerConfig     `mapstructure:"server"`
+	Newsletter  NewsletterConfig  `mapstructure:"newsletter"`
+	Extraction  ExtractionConfig  `mapstructure:"extraction"`
+	Embedding   EmbeddingConfig   `mapstructure:"embedding"`
+	Clustering  ClusteringConfig  `mapstructure:"clustering"`
+	Scheduler   SchedulerConfig   `mapstructure:"scheduler"`
+	Server      ServerConfig      `mapstructure:"server"`
 }
 
 // ProviderConfig selects an infrastructure implementation.
@@ -69,6 +70,12 @@ type GeminiConfig struct {
 // EmbeddingConfig configures the embedding pipeline.
 type EmbeddingConfig struct {
 	CacheTTL time.Duration `mapstructure:"cache_ttl"`
+}
+
+// ClusteringConfig configures topic clustering.
+type ClusteringConfig struct {
+	SimilarityThreshold float64 `mapstructure:"similarity_threshold"`
+	MergeThreshold      float64 `mapstructure:"merge_threshold"`
 }
 
 // DiscordConfig configures Discord webhook publishing.
@@ -150,6 +157,9 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("extraction.words_per_minute", 200)
 
 	v.SetDefault("embedding.cache_ttl", "720h")
+
+	v.SetDefault("clustering.similarity_threshold", 0.75)
+	v.SetDefault("clustering.merge_threshold", 0.90)
 
 	v.SetDefault("scheduler.fetch_interval", "15m")
 	v.SetDefault("server.addr", ":8080")

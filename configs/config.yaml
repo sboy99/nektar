@@ -55,6 +55,10 @@ extraction:
 embedding:
   cache_ttl: 720h
 
+clustering:
+  similarity_threshold: 0.75
+  merge_threshold: 0.90
+
 scheduler:
   fetch_interval: 15m
 

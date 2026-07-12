@@ -247,7 +247,7 @@ NEKTAR_POSTGRES_DSN='postgres://nektar:nektar@localhost:5432/nektar?sslmode=disa
 | Phase 3 | Complete | Heuristic newsletter detection, EmailDetected, allow/deny lists |
 | Phase 4 | Complete | Extraction pipeline, article split, ArticleCreated |
 | Phase 5 | Complete | Embedding generation, cache, cost tracking, EmbeddingCreated |
-| Phase 6+ | Pending | Clustering, digest, publisher |
+| Phase 6+ | Clustering done; digest/publisher pending | Clustering, digest, publisher |
 
 ## License
 

@@ -372,6 +372,16 @@ func (r *clusterRepo) UpdateCentroid(_ context.Context, clusterID string, centro
 	return nil
 }
 
+func (r *clusterRepo) Delete(_ context.Context, id string) error {
+	r.s.mu.Lock()
+	defer r.s.mu.Unlock()
+	if _, ok := r.s.clusters[id]; !ok {
+		return repository.ErrNotFound
+	}
+	delete(r.s.clusters, id)
+	return nil
+}
+
 type digestRepo struct{ s *Storage }
 
 func (r *digestRepo) Save(_ context.Context, digest *domain.Digest) error {

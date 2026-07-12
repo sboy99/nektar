@@ -332,12 +332,12 @@ Convert articles into topics.
 
 ## Tasks
 
-- [ ] Nearest-neighbor search
-- [ ] Cosine similarity
-- [ ] Create cluster
-- [ ] Update centroid
-- [ ] Merge clusters
-- [ ] Publish `ClusterUpdated`
+- [x] Nearest-neighbor search
+- [x] Cosine similarity
+- [x] Create cluster
+- [x] Update centroid
+- [x] Merge clusters
+- [x] Publish `ClusterUpdated`
 
 ---
 
@@ -565,7 +565,7 @@ The MVP is complete when:
 - [x] Newsletter detector filters non-newsletters
 - [x] Articles are extracted and normalized
 - [ ] Embeddings are generated
-- [ ] Articles are clustered
+- [x] Articles are clustered
 - [ ] Daily digest is generated
 - [ ] Digest is published to Discord
 - [ ] PostgreSQL stores all state

@@ -29,6 +29,12 @@ type Registry struct {
 	EmbeddingDuration   prometheus.Histogram
 	LLMLatency          *prometheus.HistogramVec
 	LLMTokens           *prometheus.CounterVec
+
+	ClustersCreated     prometheus.Counter
+	ClustersMerged      prometheus.Counter
+	ArticlesClustered   prometheus.Counter
+	ClusteringErrors    *prometheus.CounterVec
+	ClusteringDuration  prometheus.Histogram
 }
 
 // NewRegistry creates and registers application metrics.
@@ -130,6 +136,30 @@ func NewRegistry() *Registry {
 			},
 			[]string{"provider", "operation"},
 		),
+		ClustersCreated: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_clusters_created_total",
+			Help: "Total number of clusters created",
+		}),
+		ClustersMerged: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_clusters_merged_total",
+			Help: "Total number of cluster merges",
+		}),
+		ArticlesClustered: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "nektar_articles_clustered_total",
+			Help: "Total number of articles assigned to clusters",
+		}),
+		ClusteringErrors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "nektar_clustering_errors_total",
+				Help: "Total number of clustering pipeline errors",
+			},
+			[]string{"reason"},
+		),
+		ClusteringDuration: prometheus.NewHistogram(prometheus.HistogramOpts{
+			Name:    "nektar_clustering_duration_seconds",
+			Help:    "Duration of a clustering handler run",
+			Buckets: prometheus.DefBuckets,
+		}),
 	}
 
 	prometheus.MustRegister(
@@ -150,6 +180,11 @@ func NewRegistry() *Registry {
 		r.EmbeddingDuration,
 		r.LLMLatency,
 		r.LLMTokens,
+		r.ClustersCreated,
+		r.ClustersMerged,
+		r.ArticlesClustered,
+		r.ClusteringErrors,
+		r.ClusteringDuration,
 	)
 
 	return r

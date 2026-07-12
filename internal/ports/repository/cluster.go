@@ -13,4 +13,5 @@ type ClusterRepository interface {
 	ListByUser(ctx context.Context, userID string) ([]*domain.Cluster, error)
 	AddArticle(ctx context.Context, clusterID, articleID string) error
 	UpdateCentroid(ctx context.Context, clusterID string, centroid []float32) error
+	Delete(ctx context.Context, id string) error
 }
