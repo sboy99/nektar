@@ -2,11 +2,14 @@
 
 BINARY := bin/nektar
 CONFIG := configs/config.yaml
-POSTGRES_DSN ?= postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable
+POSTGRES_DSN ?= postgres://postgres:postgres@localhost:5432/nektar?sslmode=disable
 REDIS_ADDR ?= localhost:6379
 
 build:
 	go build -o $(BINARY) ./cmd/nektar
+
+build-gmail-auth:
+	go build -o bin/nektar-gmail-auth cmd/nektar-gmail-auth/main.go
 
 run: build
 	./$(BINARY) -config $(CONFIG)
