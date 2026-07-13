@@ -17,6 +17,7 @@ var secretEnvKeys = []string{
 	"gmail.client_secret",
 	"gemini.api_key",
 	"discord.webhook_url",
+	"redis.addr",
 	"redis.password",
 	"postgres.dsn",
 }
