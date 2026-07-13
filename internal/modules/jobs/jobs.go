@@ -156,7 +156,7 @@ func CleanupOldEvents(
 		logger.Info("cleanup_old_events: complete",
 			"trimmed", trimmed,
 			"emails_deleted", deleted,
-			"retention", retention,
+			"retention", retention.String(),
 		)
 		return nil
 	}

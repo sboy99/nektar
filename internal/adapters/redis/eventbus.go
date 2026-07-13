@@ -148,9 +148,14 @@ func (b *Bus) consumeLoop(ctx context.Context) {
 			continue
 		}
 
+		// XREADGROUP STREAMS requires all keys first, then all IDs:
+		// STREAMS key1 key2 ... id1 id2 ...
 		streams := make([]string, 0, len(topics)*2)
 		for _, topic := range topics {
-			streams = append(streams, b.streamKey(topic), ">")
+			streams = append(streams, b.streamKey(topic))
+		}
+		for range topics {
+			streams = append(streams, ">")
 		}
 
 		results, err := b.client.XReadGroup(ctx, &goredis.XReadGroupArgs{
