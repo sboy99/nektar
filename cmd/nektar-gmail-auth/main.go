@@ -8,11 +8,17 @@ import (
 	"os"
 	"strings"
 
+	"github.com/sboy99/nektar/internal/platform/config"
 	"golang.org/x/oauth2"
 	"google.golang.org/api/gmail/v1"
 )
 
 func main() {
+	if err := config.LoadDotEnv(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
 	clientID := flag.String("client-id", os.Getenv("NEKTAR_GMAIL_CLIENT_ID"), "OAuth client ID")
 	clientSecret := flag.String("client-secret", os.Getenv("NEKTAR_GMAIL_CLIENT_SECRET"), "OAuth client secret")
 	userID := flag.String("user-id", "user-1", "users.id / gmail_sync.user_id for the SQL seed")
@@ -24,7 +30,7 @@ func main() {
 
 	if *clientID == "" || *clientSecret == "" {
 		fmt.Fprintln(os.Stderr, "usage: nektar-gmail-auth -client-id=... -client-secret=... [-user-id=user-1]")
-		fmt.Fprintln(os.Stderr, "or set NEKTAR_GMAIL_CLIENT_ID and NEKTAR_GMAIL_CLIENT_SECRET")
+		fmt.Fprintln(os.Stderr, "or set NEKTAR_GMAIL_CLIENT_ID and NEKTAR_GMAIL_CLIENT_SECRET in the environment / .env")
 		os.Exit(1)
 	}
 

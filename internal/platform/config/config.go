@@ -163,7 +163,7 @@ type RetryConfig struct {
 //
 // Per-user Gmail refresh tokens live in Postgres (gmail_sync.refresh_token), not env.
 func Load(path string) (*Config, error) {
-	if err := loadDotEnv(); err != nil {
+	if err := LoadDotEnv(); err != nil {
 		return nil, err
 	}
 
@@ -192,7 +192,9 @@ func Load(path string) (*Config, error) {
 	return &cfg, nil
 }
 
-func loadDotEnv() error {
+// LoadDotEnv loads .env / .env.local into the process environment.
+// NEKTAR_ENV_FILE overrides both. Existing OS env values are never overwritten.
+func LoadDotEnv() error {
 	// Optional path override, e.g. NEKTAR_ENV_FILE=/run/secrets/nektar.env
 	if custom := strings.TrimSpace(os.Getenv("NEKTAR_ENV_FILE")); custom != "" {
 		if err := godotenv.Load(custom); err != nil {
