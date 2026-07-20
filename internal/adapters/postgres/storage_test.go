@@ -116,6 +116,8 @@ func TestUserRepository(t *testing.T) {
 		ID:        testUserID,
 		Email:     "alice@example.com",
 		Name:      "Alice",
+		GoogleID:  "google-alice",
+		AvatarURL: "https://example.com/alice.png",
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -127,7 +129,7 @@ func TestUserRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FindByID: %v", err)
 	}
-	if got.Email != "alice@example.com" || got.Name != "Alice" {
+	if got.Email != "alice@example.com" || got.Name != "Alice" || got.GoogleID != "google-alice" || got.AvatarURL != "https://example.com/alice.png" {
 		t.Fatalf("unexpected user: %+v", got)
 	}
 
@@ -139,7 +141,16 @@ func TestUserRepository(t *testing.T) {
 		t.Fatalf("FindByEmail id = %s", byEmail.ID)
 	}
 
+	byGoogle, err := s.Users().FindByGoogleID(ctx, "google-alice")
+	if err != nil {
+		t.Fatalf("FindByGoogleID: %v", err)
+	}
+	if byGoogle.ID != testUserID {
+		t.Fatalf("FindByGoogleID id = %s", byGoogle.ID)
+	}
+
 	user.Name = "Alice Updated"
+	user.AvatarURL = "https://example.com/alice2.png"
 	user.UpdatedAt = now.Add(time.Minute)
 	if err := s.Users().Save(ctx, user); err != nil {
 		t.Fatalf("upsert Save: %v", err)
@@ -148,8 +159,8 @@ func TestUserRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FindByID after upsert: %v", err)
 	}
-	if got.Name != "Alice Updated" {
-		t.Fatalf("name not updated: %s", got.Name)
+	if got.Name != "Alice Updated" || got.AvatarURL != "https://example.com/alice2.png" {
+		t.Fatalf("name/avatar not updated: %+v", got)
 	}
 
 	if _, err := s.Users().FindByID(ctx, "00000000-0000-0000-0000-000000000000"); err != repository.ErrNotFound {

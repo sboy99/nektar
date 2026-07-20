@@ -7,6 +7,8 @@ type User struct {
 	ID        string
 	Email     string
 	Name      string
+	GoogleID  string
+	AvatarURL string
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

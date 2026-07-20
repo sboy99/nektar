@@ -125,8 +125,8 @@ Nektar fetches for every row in `gmail_sync`. Prefer `nektar-gmail-auth` (it wri
 
 ```bash
 psql 'postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' <<'SQL'
-INSERT INTO users (id, email, name, created_at, updated_at)
-VALUES ('11111111-1111-1111-1111-111111111111', 'you@example.com', 'You', now(), now());
+INSERT INTO users (id, email, name, google_id, avatar_url, created_at, updated_at)
+VALUES ('11111111-1111-1111-1111-111111111111', 'you@example.com', 'You', '', '', now(), now());
 
 INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token)
 VALUES ('11111111-1111-1111-1111-111111111111', '', now(), 'newer_than:7d', '1//0g...');

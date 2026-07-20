@@ -10,19 +10,21 @@ type userRepo struct{ s *Storage }
 
 func (r *userRepo) Save(ctx context.Context, user *domain.User) error {
 	_, err := r.s.pool.Exec(ctx, `
-		INSERT INTO users (id, email, name, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO users (id, email, name, google_id, avatar_url, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		ON CONFLICT (id) DO UPDATE SET
 			email = EXCLUDED.email,
 			name = EXCLUDED.name,
+			google_id = EXCLUDED.google_id,
+			avatar_url = EXCLUDED.avatar_url,
 			updated_at = EXCLUDED.updated_at
-	`, user.ID, user.Email, user.Name, user.CreatedAt, user.UpdatedAt)
+	`, user.ID, user.Email, user.Name, user.GoogleID, user.AvatarURL, user.CreatedAt, user.UpdatedAt)
 	return err
 }
 
 func (r *userRepo) FindByID(ctx context.Context, id string) (*domain.User, error) {
 	row := r.s.pool.QueryRow(ctx, `
-		SELECT id, email, name, created_at, updated_at
+		SELECT id, email, name, google_id, avatar_url, created_at, updated_at
 		FROM users WHERE id = $1
 	`, id)
 	return scanUser(row)
@@ -30,9 +32,17 @@ func (r *userRepo) FindByID(ctx context.Context, id string) (*domain.User, error
 
 func (r *userRepo) FindByEmail(ctx context.Context, email string) (*domain.User, error) {
 	row := r.s.pool.QueryRow(ctx, `
-		SELECT id, email, name, created_at, updated_at
+		SELECT id, email, name, google_id, avatar_url, created_at, updated_at
 		FROM users WHERE email = $1
 	`, email)
+	return scanUser(row)
+}
+
+func (r *userRepo) FindByGoogleID(ctx context.Context, googleID string) (*domain.User, error) {
+	row := r.s.pool.QueryRow(ctx, `
+		SELECT id, email, name, google_id, avatar_url, created_at, updated_at
+		FROM users WHERE google_id = $1 AND google_id <> ''
+	`, googleID)
 	return scanUser(row)
 }
 
@@ -101,7 +111,15 @@ type scannable interface {
 
 func scanUser(row scannable) (*domain.User, error) {
 	var user domain.User
-	err := row.Scan(&user.ID, &user.Email, &user.Name, &user.CreatedAt, &user.UpdatedAt)
+	err := row.Scan(
+		&user.ID,
+		&user.Email,
+		&user.Name,
+		&user.GoogleID,
+		&user.AvatarURL,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
 	if err != nil {
 		return nil, mapNotFound(err)
 	}

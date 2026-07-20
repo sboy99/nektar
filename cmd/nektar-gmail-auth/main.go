@@ -270,6 +270,15 @@ func resolveUserID(ctx context.Context, storage *postgres.Storage, profile *goog
 		}
 		return id, nil
 	}
+	if profile.ID != "" {
+		existing, err := storage.Users().FindByGoogleID(ctx, profile.ID)
+		if err == nil && existing != nil {
+			return existing.ID, nil
+		}
+		if err != nil && !errors.Is(err, repository.ErrNotFound) {
+			return "", fmt.Errorf("find user by google id: %w", err)
+		}
+	}
 	existing, err := storage.Users().FindByEmail(ctx, profile.Email)
 	if err == nil && existing != nil {
 		return existing.ID, nil
@@ -286,6 +295,8 @@ func upsertUser(ctx context.Context, storage *postgres.Storage, userID string, p
 		ID:        userID,
 		Email:     profile.Email,
 		Name:      profile.Name,
+		GoogleID:  profile.ID,
+		AvatarURL: profile.Picture,
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
@@ -332,15 +343,18 @@ func upsertGmailSync(ctx context.Context, storage *postgres.Storage, userID, ref
 
 func printSavedAccount(user *domain.User, sync *domain.GmailSync, profile *googleProfile) {
 	fmt.Println("Saved Google account to Postgres.")
-	fmt.Printf("  user_id:  %s\n", user.ID)
-	fmt.Printf("  email:    %s\n", user.Email)
-	fmt.Printf("  name:     %s\n", user.Name)
-	if profile.Picture != "" {
-		fmt.Printf("  picture:  %s\n", profile.Picture)
+	fmt.Printf("  user_id:    %s\n", user.ID)
+	fmt.Printf("  email:      %s\n", user.Email)
+	fmt.Printf("  name:       %s\n", user.Name)
+	if user.GoogleID != "" {
+		fmt.Printf("  google_id:  %s\n", user.GoogleID)
+	}
+	if user.AvatarURL != "" {
+		fmt.Printf("  avatar_url: %s\n", user.AvatarURL)
 	}
 	if profile.Locale != "" {
-		fmt.Printf("  locale:   %s\n", profile.Locale)
+		fmt.Printf("  locale:     %s\n", profile.Locale)
 	}
-	fmt.Printf("  query:    %s\n", sync.Query)
+	fmt.Printf("  query:      %s\n", sync.Query)
 	fmt.Println("  refresh_token: stored in gmail_sync")
 }

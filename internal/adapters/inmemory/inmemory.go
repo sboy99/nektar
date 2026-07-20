@@ -247,6 +247,20 @@ func (r *userRepo) FindByEmail(_ context.Context, email string) (*domain.User, e
 	return nil, repository.ErrNotFound
 }
 
+func (r *userRepo) FindByGoogleID(_ context.Context, googleID string) (*domain.User, error) {
+	r.s.mu.RLock()
+	defer r.s.mu.RUnlock()
+	if googleID == "" {
+		return nil, repository.ErrNotFound
+	}
+	for _, u := range r.s.users {
+		if u.GoogleID == googleID {
+			return u, nil
+		}
+	}
+	return nil, repository.ErrNotFound
+}
+
 func (r *userRepo) SaveGmailSync(_ context.Context, sync *domain.GmailSync) error {
 	r.s.mu.Lock()
 	defer r.s.mu.Unlock()
