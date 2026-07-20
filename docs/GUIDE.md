@@ -108,15 +108,11 @@ You can still export the same `NEKTAR_*` variables in your shell instead of usin
 2. Run the helper:
 
 ```bash
-go run ./cmd/nektar-gmail-auth \
-  -client-id="$NEKTAR_GMAIL_CLIENT_ID" \
-  -client-secret="$NEKTAR_GMAIL_CLIENT_SECRET" \
-  -user-id=user-1 \
-  -email=you@example.com
+go run ./cmd/nektar-gmail-auth
 ```
 
-3. Open the printed URL, approve access (read-only Gmail scope).
-4. Add the printed `.env` lines for client id/secret, then run the printed SQL to store the refresh token in `gmail_sync.refresh_token`.
+3. Open the printed URL, approve access (Gmail readonly + profile/email scopes).
+4. The helper fetches your Google profile and upserts `users` + `gmail_sync` (UUID `users.id`, FK on `gmail_sync.user_id`).
 
 ### 3.4 Discord webhook
 
@@ -125,15 +121,15 @@ go run ./cmd/nektar-gmail-auth \
 
 ### 3.5 Seed a user + Gmail sync cursor
 
-Nektar fetches for every row in `gmail_sync`. Prefer the SQL printed by `nektar-gmail-auth`, or seed manually:
+Nektar fetches for every row in `gmail_sync`. Prefer `nektar-gmail-auth` (it writes the rows). Manual seed example:
 
 ```bash
 psql 'postgres://nektar:nektar@localhost:5432/nektar?sslmode=disable' <<'SQL'
 INSERT INTO users (id, email, name, created_at, updated_at)
-VALUES ('user-1', 'you@example.com', 'You', now(), now());
+VALUES ('11111111-1111-1111-1111-111111111111', 'you@example.com', 'You', now(), now());
 
 INSERT INTO gmail_sync (user_id, history_id, last_synced_at, query, refresh_token)
-VALUES ('user-1', '', now(), 'newer_than:7d', '1//0g...');
+VALUES ('11111111-1111-1111-1111-111111111111', '', now(), 'newer_than:7d', '1//0g...');
 SQL
 ```
 
@@ -261,8 +257,8 @@ make test-integration
 
 Each Gmail mailbox is a `users` + `gmail_sync` pair with its own `refresh_token`.
 
-1. Run `nektar-gmail-auth -user-id=user-2 -email=bob@example.com`
-2. Apply the printed SQL (stores refresh token on that user's `gmail_sync` row)
+1. Run `nektar-gmail-auth` for each mailbox (reuses UUID by email, or generates a new one)
+2. Confirm `users` + `gmail_sync` rows were written
 
 Digests and Discord posts are produced per user pipeline activity.
 

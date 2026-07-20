@@ -10,6 +10,9 @@ import (
 	"github.com/sboy99/nektar/shared/domain"
 )
 
+// Fixed UUID for postgres integration fixtures (users.id is UUID).
+const testUserID = "11111111-1111-1111-1111-111111111111"
+
 func testStorage(t *testing.T) *Storage {
 	t.Helper()
 	dsn := os.Getenv("NEKTAR_POSTGRES_DSN")
@@ -110,7 +113,7 @@ func TestUserRepository(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Millisecond)
 
 	user := &domain.User{
-		ID:        "user-1",
+		ID:        testUserID,
 		Email:     "alice@example.com",
 		Name:      "Alice",
 		CreatedAt: now,
@@ -120,7 +123,7 @@ func TestUserRepository(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	got, err := s.Users().FindByID(ctx, "user-1")
+	got, err := s.Users().FindByID(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("FindByID: %v", err)
 	}
@@ -132,7 +135,7 @@ func TestUserRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FindByEmail: %v", err)
 	}
-	if byEmail.ID != "user-1" {
+	if byEmail.ID != testUserID {
 		t.Fatalf("FindByEmail id = %s", byEmail.ID)
 	}
 
@@ -141,7 +144,7 @@ func TestUserRepository(t *testing.T) {
 	if err := s.Users().Save(ctx, user); err != nil {
 		t.Fatalf("upsert Save: %v", err)
 	}
-	got, err = s.Users().FindByID(ctx, "user-1")
+	got, err = s.Users().FindByID(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("FindByID after upsert: %v", err)
 	}
@@ -149,12 +152,12 @@ func TestUserRepository(t *testing.T) {
 		t.Fatalf("name not updated: %s", got.Name)
 	}
 
-	if _, err := s.Users().FindByID(ctx, "missing"); err != repository.ErrNotFound {
+	if _, err := s.Users().FindByID(ctx, "00000000-0000-0000-0000-000000000000"); err != repository.ErrNotFound {
 		t.Fatalf("FindByID missing: got %v", err)
 	}
 
 	sync := &domain.GmailSync{
-		UserID:       "user-1",
+		UserID:       testUserID,
 		HistoryID:    "hist-1",
 		LastSyncedAt: now,
 		Query:        "label:newsletter",
@@ -163,7 +166,7 @@ func TestUserRepository(t *testing.T) {
 	if err := s.Users().SaveGmailSync(ctx, sync); err != nil {
 		t.Fatalf("SaveGmailSync: %v", err)
 	}
-	gotSync, err := s.Users().GetGmailSync(ctx, "user-1")
+	gotSync, err := s.Users().GetGmailSync(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("GetGmailSync: %v", err)
 	}
@@ -175,7 +178,7 @@ func TestUserRepository(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ListGmailSyncs: %v", err)
 	}
-	if len(listed) != 1 || listed[0].UserID != "user-1" {
+	if len(listed) != 1 || listed[0].UserID != testUserID {
 		t.Fatalf("unexpected ListGmailSyncs: %+v", listed)
 	}
 }
@@ -183,9 +186,9 @@ func TestUserRepository(t *testing.T) {
 func TestEmailRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
+	seedUser(t, s, testUserID)
 
-	email := seedEmail(t, s, "user-1", "email-1", domain.StageFetched)
+	email := seedEmail(t, s, testUserID, "email-1", domain.StageFetched)
 	got, err := s.Emails().FindByID(ctx, "email-1")
 	if err != nil {
 		t.Fatalf("FindByID: %v", err)
@@ -194,7 +197,7 @@ func TestEmailRepository(t *testing.T) {
 		t.Fatalf("unexpected email: %+v", got)
 	}
 
-	byGmail, err := s.Emails().FindByGmailMessageID(ctx, "user-1", email.GmailMessageID)
+	byGmail, err := s.Emails().FindByGmailMessageID(ctx, testUserID, email.GmailMessageID)
 	if err != nil {
 		t.Fatalf("FindByGmailMessageID: %v", err)
 	}
@@ -202,8 +205,8 @@ func TestEmailRepository(t *testing.T) {
 		t.Fatalf("id = %s", byGmail.ID)
 	}
 
-	seedEmail(t, s, "user-1", "email-2", domain.StageDetected)
-	unprocessed, err := s.Emails().ListUnprocessed(ctx, "user-1")
+	seedEmail(t, s, testUserID, "email-2", domain.StageDetected)
+	unprocessed, err := s.Emails().ListUnprocessed(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("ListUnprocessed: %v", err)
 	}
@@ -211,7 +214,7 @@ func TestEmailRepository(t *testing.T) {
 		t.Fatalf("unprocessed = %+v", unprocessed)
 	}
 
-	listed, err := s.Emails().ListByUser(ctx, "user-1", 1)
+	listed, err := s.Emails().ListByUser(ctx, testUserID, 1)
 	if err != nil {
 		t.Fatalf("ListByUser: %v", err)
 	}
@@ -223,11 +226,11 @@ func TestEmailRepository(t *testing.T) {
 func TestArticleRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
-	seedEmail(t, s, "user-1", "email-1", domain.StageExtracted)
+	seedUser(t, s, testUserID)
+	seedEmail(t, s, testUserID, "email-1", domain.StageExtracted)
 
-	seedArticle(t, s, "user-1", "email-1", "art-1", domain.StageEmbedded)
-	seedArticle(t, s, "user-1", "email-1", "art-2", domain.StageClustered)
+	seedArticle(t, s, testUserID, "email-1", "art-1", domain.StageEmbedded)
+	seedArticle(t, s, testUserID, "email-1", "art-2", domain.StageClustered)
 
 	got, err := s.Articles().FindByID(ctx, "art-1")
 	if err != nil {
@@ -245,7 +248,7 @@ func TestArticleRepository(t *testing.T) {
 		t.Fatalf("ListByEmail len = %d", len(byEmail))
 	}
 
-	unclustered, err := s.Articles().ListUnclustered(ctx, "user-1")
+	unclustered, err := s.Articles().ListUnclustered(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("ListUnclustered: %v", err)
 	}
@@ -257,15 +260,15 @@ func TestArticleRepository(t *testing.T) {
 func TestClusterRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
-	seedEmail(t, s, "user-1", "email-1", domain.StageExtracted)
-	seedArticle(t, s, "user-1", "email-1", "art-1", domain.StageEmbedded)
-	seedArticle(t, s, "user-1", "email-1", "art-2", domain.StageEmbedded)
+	seedUser(t, s, testUserID)
+	seedEmail(t, s, testUserID, "email-1", domain.StageExtracted)
+	seedArticle(t, s, testUserID, "email-1", "art-1", domain.StageEmbedded)
+	seedArticle(t, s, testUserID, "email-1", "art-2", domain.StageEmbedded)
 
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	cluster := &domain.Cluster{
 		ID:         "cluster-1",
-		UserID:     "user-1",
+		UserID:     testUserID,
 		Name:       "AI News",
 		Centroid:   []float32{0.1, 0.2, 0.3},
 		ArticleIDs: []string{"art-1"},
@@ -312,7 +315,7 @@ func TestClusterRepository(t *testing.T) {
 		t.Fatalf("AddArticle missing cluster: got %v", err)
 	}
 
-	listed, err := s.Clusters().ListByUser(ctx, "user-1")
+	listed, err := s.Clusters().ListByUser(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("ListByUser: %v", err)
 	}
@@ -324,13 +327,13 @@ func TestClusterRepository(t *testing.T) {
 func TestDigestRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
+	seedUser(t, s, testUserID)
 
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	publishedAt := now
 	draft := &domain.Digest{
 		ID:                 "digest-1",
-		UserID:             "user-1",
+		UserID:             testUserID,
 		Title:              "Daily",
 		Markdown:           "# Daily",
 		Summary:            "summary",
@@ -346,7 +349,7 @@ func TestDigestRepository(t *testing.T) {
 
 	published := &domain.Digest{
 		ID:            "digest-2",
-		UserID:        "user-1",
+		UserID:        testUserID,
 		Title:         "Yesterday",
 		PublishStatus: domain.PublishStatusPublished,
 		PublishedAt:   &publishedAt,
@@ -364,7 +367,7 @@ func TestDigestRepository(t *testing.T) {
 		t.Fatalf("article ids = %v", got.ArticleIDs)
 	}
 
-	unpublished, err := s.Digests().ListUnpublished(ctx, "user-1")
+	unpublished, err := s.Digests().ListUnpublished(ctx, testUserID)
 	if err != nil {
 		t.Fatalf("ListUnpublished: %v", err)
 	}
@@ -372,7 +375,7 @@ func TestDigestRepository(t *testing.T) {
 		t.Fatalf("unpublished = %+v", unpublished)
 	}
 
-	recent, err := s.Digests().ListRecent(ctx, "user-1", 1)
+	recent, err := s.Digests().ListRecent(ctx, testUserID, 1)
 	if err != nil {
 		t.Fatalf("ListRecent: %v", err)
 	}
@@ -384,13 +387,13 @@ func TestDigestRepository(t *testing.T) {
 func TestEmbeddingRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
-	seedEmail(t, s, "user-1", "email-1", domain.StageExtracted)
-	seedArticle(t, s, "user-1", "email-1", "art-1", domain.StageEmbedded)
+	seedUser(t, s, testUserID)
+	seedEmail(t, s, testUserID, "email-1", domain.StageExtracted)
+	seedArticle(t, s, testUserID, "email-1", "art-1", domain.StageEmbedded)
 
 	emb := &domain.Embedding{
 		ID:         "emb-1",
-		UserID:     "user-1",
+		UserID:     testUserID,
 		ArticleID:  "art-1",
 		Vector:     []float32{0.5, 0.25},
 		Model:      "text-embedding-004",
@@ -426,12 +429,12 @@ func TestEmbeddingRepository(t *testing.T) {
 func TestLLMRequestRepository(t *testing.T) {
 	s := testStorage(t)
 	ctx := context.Background()
-	seedUser(t, s, "user-1")
+	seedUser(t, s, testUserID)
 
 	now := time.Now().UTC().Truncate(time.Millisecond)
 	req := &domain.LLMRequest{
 		ID:               "llm-1",
-		UserID:           "user-1",
+		UserID:           testUserID,
 		ResourceType:     domain.ResourceTypeArticle,
 		ResourceID:       "art-1",
 		Provider:         "gemini",
@@ -445,7 +448,7 @@ func TestLLMRequestRepository(t *testing.T) {
 		t.Fatalf("Save: %v", err)
 	}
 
-	listed, err := s.LLMRequests().ListByUser(ctx, "user-1", now.Add(-time.Minute))
+	listed, err := s.LLMRequests().ListByUser(ctx, testUserID, now.Add(-time.Minute))
 	if err != nil {
 		t.Fatalf("ListByUser: %v", err)
 	}
@@ -453,7 +456,7 @@ func TestLLMRequestRepository(t *testing.T) {
 		t.Fatalf("listed = %+v", listed)
 	}
 
-	empty, err := s.LLMRequests().ListByUser(ctx, "user-1", now.Add(time.Hour))
+	empty, err := s.LLMRequests().ListByUser(ctx, testUserID, now.Add(time.Hour))
 	if err != nil {
 		t.Fatalf("ListByUser future: %v", err)
 	}

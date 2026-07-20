@@ -160,14 +160,10 @@ Note: Gemini still requires a valid API key to bootstrap. Gmail OAuth app creden
 3. Obtain a refresh token:
 
 ```bash
-go run ./cmd/nektar-gmail-auth \
-  -client-id="$NEKTAR_GMAIL_CLIENT_ID" \
-  -client-secret="$NEKTAR_GMAIL_CLIENT_SECRET" \
-  -user-id=user-1 \
-  -email=you@example.com
+go run ./cmd/nektar-gmail-auth
 ```
 
-4. Add printed client id/secret to `.env`. Run the printed SQL to store the refresh token in `gmail_sync.refresh_token`.
+4. Approve access in the browser. The helper saves `users` (UUID id) + `gmail_sync.refresh_token` to Postgres.
 
 Leave `history_id` empty for the first bootstrap list sync; subsequent runs use the History API.
 ### Newsletter Detection

@@ -3,6 +3,8 @@ package domain
 import (
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func requireNonEmpty(field, value string) error {
@@ -46,6 +48,9 @@ func NewUser(id, email, name string) (*User, error) {
 func (u *User) Validate() error {
 	if err := requireNonEmpty("id", u.ID); err != nil {
 		return err
+	}
+	if _, err := uuid.Parse(strings.TrimSpace(u.ID)); err != nil {
+		return ErrInvalidID
 	}
 	return requireNonEmpty("email", u.Email)
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewUser(t *testing.T) {
-	u, err := domain.NewUser("user-1", "test@example.com", "Test User")
+	u, err := domain.NewUser("11111111-1111-1111-1111-111111111111", "test@example.com", "Test User")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -17,8 +17,15 @@ func TestNewUser(t *testing.T) {
 	}
 }
 
+func TestNewUserInvalidID(t *testing.T) {
+	_, err := domain.NewUser("user-1", "test@example.com", "Test User")
+	if err != domain.ErrInvalidID {
+		t.Fatalf("expected ErrInvalidID, got %v", err)
+	}
+}
+
 func TestNewUserMissingEmail(t *testing.T) {
-	_, err := domain.NewUser("user-1", "", "Test User")
+	_, err := domain.NewUser("11111111-1111-1111-1111-111111111111", "", "Test User")
 	if err != domain.ErrInvalidEmail {
 		t.Fatalf("expected ErrInvalidEmail, got %v", err)
 	}
